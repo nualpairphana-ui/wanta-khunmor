@@ -180,7 +180,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
         <input type="hidden" id="sale-cust-id">
       </div>
       <div style="flex:0;align-self:flex-end"><button class="btn ghost" onclick="newCustFromSale()">+ ลูกค้าใหม่</button></div>
-      <div><label>สาขา</label><select id="sale-branch"><option>สาขาหลัก</option><option>สาขาโรงพยาบาลกรุงเทพ</option></select></div>
+      <div><label>สาขา</label><select id="sale-branch"></select></div>
       <div><label>วันที่ขาย</label><input type="date" id="sale-date"></div>
     </div>
     <details id="sale-rx-box" style="margin-bottom:14px;border:1px solid var(--line);border-radius:10px;padding:12px 16px">
@@ -233,7 +233,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
         <input type="hidden" id="cl-cust-id">
       </div>
       <div style="flex:0;align-self:flex-end"><button class="btn ghost" onclick="newCustFromClaim()">+ ลูกค้าใหม่</button></div>
-      <div><label>สาขา</label><select id="cl-branch"><option>สาขาหลัก</option><option>สาขาโรงพยาบาลกรุงเทพ</option></select></div>
+      <div><label>สาขา</label><select id="cl-branch"></select></div>
       <div style="max-width:130px"><label>เลขที่ CN</label><input id="cl-cn" placeholder="CN...."></div>
       <div><label>วันที่</label><input type="date" id="cl-date"></div>
     </div>
@@ -291,7 +291,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
     <div class="row" style="margin-bottom:0">
       <div><label>ตั้งแต่วันที่</label><input type="date" id="rp-from" onchange="renderReport()"></div>
       <div><label>ถึงวันที่</label><input type="date" id="rp-to" onchange="renderReport()"></div>
-      <div><label>สาขา</label><select id="rp-branch" onchange="renderReport()"><option value="">ทุกสาขา</option><option>สาขาหลัก</option><option>สาขาโรงพยาบาลกรุงเทพ</option></select></div>
+      <div><label>สาขา</label><select id="rp-branch" onchange="renderReport()"><option value="">ทุกสาขา</option></select></div>
       <div style="flex:0;align-self:flex-end;display:flex;gap:8px">
         <button class="btn ghost" onclick="exportSalesCSV()">ดาวน์โหลด CSV</button>
         <button class="btn ghost" onclick="window.print()">พิมพ์</button>
@@ -330,6 +330,15 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
       <div style="max-width:160px"><label>โทร</label><input id="shop-tel"></div>
       <div style="flex:0;align-self:flex-end"><button class="btn" onclick="saveShop()">บันทึก</button></div>
     </div>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">สาขาที่บริการ</h3>
+    <p class="muted">สาขาที่เพิ่มไว้จะขึ้นเป็นตัวเลือกในหน้าขาย หน้าเคลม และตัวกรองรายงาน</p>
+    <div class="row" style="margin-top:10px">
+      <div><input id="new-branch" placeholder="ชื่อสาขาใหม่ เช่น สาขาเซ็นทรัล"></div>
+      <div style="flex:0"><button class="btn" onclick="addBranch()">เพิ่มสาขา</button></div>
+    </div>
+    <div id="branch-chips"></div>
   </div>
   <div class="panel">
     <h3 style="margin-top:0">แบรนด์สินค้า</h3>
@@ -453,6 +462,7 @@ function load(){
   if(!d||!d.customers)d={customers:[],sales:[],brands:['Rayban','Oakley','Gucci','Prada','Rodenstock','Essilor','Hoya','Zeiss','Acuvue','Bausch & Lomb','Alcon','Maxim'],seq:1000};
   if(!d.shop)d.shop={...SHOP_DEFAULT};
   if(!d.billSeq)d.billSeq=0;
+  if(!Array.isArray(d.branches)||!d.branches.length)d.branches=['สาขาหลัก','สาขาโรงพยาบาลกรุงเทพ'];
   return d;
 }
 let state=load();
@@ -1014,6 +1024,7 @@ function fillBrands(){
 }
 function renderBrands(){
   document.getElementById('brand-chips').innerHTML=state.brands.map((b,i)=>`<span class="brand-chip">${esc(b)} <b onclick="delBrand(${i})">✕</b></span>`).join('');
+  renderBranches();
   ['addr1','addr2','fb','line','tel'].forEach(k=>document.getElementById('shop-'+k).value=state.shop[k]||'');
   updateSyncUI();
 }
@@ -1027,6 +1038,46 @@ function addBrand(){
   document.getElementById('new-brand').value='';save();renderBrands();fillBrands();
 }
 function delBrand(i){state.brands.splice(i,1);save();renderBrands();fillBrands();}
+// ===== branches =====
+function fillBranches(){
+  const list=state.branches||[];
+  ['sale-branch','cl-branch'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const cur=el.value;
+    el.innerHTML=list.map(b=>`<option>${esc(b)}</option>`).join('');
+    if(list.includes(cur))el.value=cur;
+  });
+  const rp=document.getElementById('rp-branch');
+  if(rp){const cur=rp.value;rp.innerHTML='<option value="">ทุกสาขา</option>'+list.map(b=>`<option>${esc(b)}</option>`).join('');if(cur===''||list.includes(cur))rp.value=cur;}
+}
+function renderBranches(){
+  const el=document.getElementById('branch-chips');if(!el)return;
+  el.innerHTML=(state.branches||[]).map((b,i)=>`<span class="brand-chip">${esc(b)} <b onclick="renameBranch(${i})" title="แก้ชื่อ" style="color:var(--ink)">✎</b> <b onclick="removeBranch(${i})" title="ลบ">✕</b></span>`).join('');
+}
+function addBranch(){
+  const v=document.getElementById('new-branch').value.trim();if(!v)return;
+  state.branches=state.branches||[];
+  if(state.branches.includes(v)){alert('มีสาขานี้อยู่แล้ว');return;}
+  state.branches.push(v);
+  document.getElementById('new-branch').value='';save();renderBranches();fillBranches();toast('เพิ่มสาขาแล้ว');
+}
+function renameBranch(i){
+  const old=state.branches[i];
+  const v=prompt('แก้ชื่อสาขา',old);if(v===null)return;
+  const nv=v.trim();if(!nv||nv===old)return;
+  if(state.branches.some((b,x)=>x!==i&&b===nv)){alert('มีสาขาชื่อนี้แล้ว');return;}
+  state.branches[i]=nv;
+  state.sales.forEach(s=>{if((s.branch||'สาขาหลัก')===old)s.branch=nv;});
+  save();renderBranches();fillBranches();renderDash();toast('แก้ชื่อสาขาแล้ว (อัปเดตรายการเดิมให้ด้วย)');
+}
+function removeBranch(i){
+  const list=state.branches||[];
+  if(list.length<=1){alert('ต้องมีอย่างน้อย 1 สาขา');return;}
+  const name=list[i];
+  if(state.sales.some(s=>(s.branch||'สาขาหลัก')===name)){alert('สาขา "'+name+'" มีรายการขาย/เคลมอยู่ ลบไม่ได้\nถ้าต้องการ ให้แก้ชื่อสาขาแทน');return;}
+  if(!confirm('ลบสาขา "'+name+'" ?'))return;
+  state.branches.splice(i,1);save();renderBranches();fillBranches();toast('ลบสาขาแล้ว');
+}
 
 // ============ BACKUP / EXPORT ============
 function download(name,content,type){
@@ -1186,9 +1237,10 @@ function startSync(){
     if(!d.exists)return;
     const m=d.data();
     state.brands=m.brands||state.brands;state.shop=m.shop||state.shop;
+    if(Array.isArray(m.branches)&&m.branches.length)state.branches=m.branches;
     state.seq=Math.max(state.seq,m.seq||0);state.billSeq=Math.max(state.billSeq,m.billSeq||0);
-    lastPush.meta=JSON.stringify({brands:state.brands,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
-    localStorage.setItem(KEY,JSON.stringify(state));fillBrands();
+    lastPush.meta=JSON.stringify({brands:state.brands,branches:state.branches,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
+    localStorage.setItem(KEY,JSON.stringify(state));fillBrands();fillBranches();
   });
 }
 function schedulePush(){if(!fbUser||!fbDB)return;clearTimeout(pushTimer);pushTimer=setTimeout(cloudPush,800);}
@@ -1203,7 +1255,7 @@ async function cloudPush(){
     for(const id in lastPush.cust)if(!cur.cust[id])ops.push(['del',col('customers').doc(id)]);
     for(const id in cur.sales)if(lastPush.sales[id]!==cur.sales[id])ops.push(['set',col('sales').doc(id),JSON.parse(cur.sales[id])]);
     for(const id in lastPush.sales)if(!cur.sales[id])ops.push(['del',col('sales').doc(id)]);
-    const meta=JSON.stringify({brands:state.brands,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
+    const meta=JSON.stringify({brands:state.brands,branches:state.branches,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
     if(meta!==lastPush.meta)ops.push(['set',metaDoc(),JSON.parse(meta)]);
     for(let i=0;i<ops.length;i+=400){
       const b=fbDB.batch();
@@ -1224,6 +1276,7 @@ document.getElementById('s-rx-editor').innerHTML=buildRxEditor('s-rx');
 document.getElementById('cl-rx-editor').innerHTML=buildRxEditor('cl-rx');
 document.getElementById('sale-date').value=today();
 document.getElementById('cl-date').value=today();
+fillBranches();
 quickRange('month',document.querySelector('#page-report .pill.active'));
 fillBrands();renderCart();renderDash();initCloud();
 </script>
