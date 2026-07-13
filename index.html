@@ -91,14 +91,14 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
 @media(max-width:700px){.grid2{grid-template-columns:1fr}}
 .brand-chip{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border-radius:14px;padding:4px 12px;margin:3px;font-size:13px}
 .brand-chip b{cursor:pointer;color:var(--red)}
-.set-layout{display:grid;grid-template-columns:230px 1fr;gap:20px;align-items:start}
-.set-nav{display:flex;flex-direction:column;gap:4px;position:sticky;top:82px}
-.set-nav button{text-align:left;font-family:'Prompt',sans-serif;font-size:15px;padding:11px 16px;border:none;background:none;cursor:pointer;border-radius:10px;color:var(--ink)}
-.set-nav button:hover{background:var(--soft)}
-.set-nav button.active{background:var(--ink);color:#fff}
-.set-section{display:none}
-.set-section.active{display:block}
-@media(max-width:760px){.set-layout{grid-template-columns:1fr}.set-nav{position:static;flex-direction:row;flex-wrap:wrap;margin-bottom:6px}.set-nav button{font-size:14px;padding:8px 14px;border:1px solid var(--line);border-radius:20px}}
+.set-layout,.rep-layout{display:grid;grid-template-columns:230px 1fr;gap:20px;align-items:start}
+.set-nav,.rep-nav{display:flex;flex-direction:column;gap:4px;position:sticky;top:82px}
+.set-nav button,.rep-nav button{text-align:left;font-family:'Prompt',sans-serif;font-size:15px;padding:11px 16px;border:none;background:none;cursor:pointer;border-radius:10px;color:var(--ink)}
+.set-nav button:hover,.rep-nav button:hover{background:var(--soft)}
+.set-nav button.active,.rep-nav button.active{background:var(--ink);color:#fff}
+.set-section,.rep-section{display:none}
+.set-section.active,.rep-section.active{display:block}
+@media(max-width:760px){.set-layout,.rep-layout{grid-template-columns:1fr}.set-nav,.rep-nav{position:static;flex-direction:row;flex-wrap:wrap;margin-bottom:6px}.set-nav button,.rep-nav button{font-size:14px;padding:8px 14px;border:1px solid var(--line);border-radius:20px}}
 @media print{header nav,.no-print{display:none}}
 /* ===== RECEIPT ===== */
 .receipt-sheet{background:#fff;color:#000;width:100%;max-width:420px;margin:0 auto;padding:18px 20px;font-family:'Prompt',sans-serif;font-size:13px;border:1px dashed var(--line)}
@@ -288,7 +288,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
 
 <!-- ===== REPORT ===== -->
 <section id="page-report" class="page">
-  <h2>รายงานยอดขาย</h2>
+  <h2>รายงาน</h2>
   <div class="panel no-print">
     <div class="pill-row">
       <button class="pill" onclick="quickRange('today',this)">วันนี้</button>
@@ -302,24 +302,68 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
       <div><label>ถึงวันที่</label><input type="date" id="rp-to" onchange="renderReport()"></div>
       <div><label>สาขา</label><select id="rp-branch" onchange="renderReport()"><option value="">ทุกสาขา</option></select></div>
       <div style="flex:0;align-self:flex-end;display:flex;gap:8px">
-        <button class="btn ghost" onclick="exportSalesCSV()">ดาวน์โหลด CSV</button>
         <button class="btn ghost" onclick="window.print()">พิมพ์</button>
       </div>
     </div>
   </div>
-  <div class="cards">
-    <div class="card"><div class="label">ยอดขายรวม</div><div class="value red" id="rp-total">0</div></div>
-    <div class="card"><div class="label">จำนวนบิล</div><div class="value" id="rp-bills">0</div></div>
-    <div class="card"><div class="label">จำนวนชิ้น</div><div class="value" id="rp-items">0</div></div>
-    <div class="card"><div class="label">เฉลี่ย/บิล</div><div class="value" id="rp-avg">0</div></div>
+  <div class="rep-layout">
+    <div class="rep-nav no-print">
+      <button id="rtab-summary" class="active" onclick="repTab('summary')">ยอดขายรวม</button>
+      <button id="rtab-product" onclick="repTab('product')">ขายตามสินค้า</button>
+      <button id="rtab-claim" onclick="repTab('claim')">รายงานการเคลม</button>
+    </div>
+    <div>
+      <div class="rep-section active" id="rep-summary">
+        <div class="row no-print" style="justify-content:flex-end;margin-bottom:12px"><div style="flex:0"><button class="btn ghost" onclick="exportSalesCSV()">ดาวน์โหลด CSV (รายบิล)</button></div></div>
+        <div class="cards">
+          <div class="card"><div class="label">ยอดขายรวม</div><div class="value red" id="rp-total">0</div></div>
+          <div class="card"><div class="label">จำนวนบิล</div><div class="value" id="rp-bills">0</div></div>
+          <div class="card"><div class="label">จำนวนชิ้น</div><div class="value" id="rp-items">0</div></div>
+          <div class="card"><div class="label">เฉลี่ย/บิล</div><div class="value" id="rp-avg">0</div></div>
+        </div>
+        <div class="panel"><h3 style="margin-top:0">ยอดขายแยกตามสาขา</h3><div id="rp-branch-break"></div></div>
+        <div class="grid2">
+          <div class="panel"><h3 style="margin-top:0">ยอดขายแยกตามหมวดสินค้า</h3><div id="rp-cat"></div></div>
+          <div class="panel"><h3 style="margin-top:0">ยอดขายแยกตามแบรนด์</h3><div id="rp-brand"></div></div>
+        </div>
+        <div class="panel"><h3 style="margin-top:0">ลูกค้ายอดซื้อสูงสุด / ซื้อบ่อย</h3><div id="rp-top"></div></div>
+        <div class="panel"><h3 style="margin-top:0">รายการขายในช่วงที่เลือก</h3><div id="rp-list"></div></div>
+      </div>
+      <div class="rep-section" id="rep-product">
+        <div class="row no-print" style="justify-content:flex-end;margin-bottom:12px"><div style="flex:0"><button class="btn ghost" onclick="exportProductCSV()">ดาวน์โหลด CSV (รายสินค้า)</button></div></div>
+        <div class="cards">
+          <div class="card"><div class="label">จำนวนชิ้นที่ขายได้</div><div class="value" id="pr-qty">0</div></div>
+          <div class="card"><div class="label">ยอดขายสินค้ารวม</div><div class="value red" id="pr-amt">0</div></div>
+          <div class="card"><div class="label">จำนวนรายการสินค้า</div><div class="value" id="pr-kinds">0</div></div>
+        </div>
+        <div class="panel"><h3 style="margin-top:0">จำนวนที่ขายได้ แยกตามหมวดสินค้า</h3><div id="pr-cat"></div></div>
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">รายสินค้า (เรียงตามจำนวนที่ขายได้)</h3>
+            <input id="pr-search" placeholder="ค้นหาหมวด / แบรนด์ / รุ่น..." oninput="renderReport()" style="max-width:300px">
+          </div>
+          <div id="pr-list" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <div class="rep-section" id="rep-claim">
+        <div class="row no-print" style="justify-content:flex-end;margin-bottom:12px"><div style="flex:0"><button class="btn ghost" onclick="exportClaimCSV()">ดาวน์โหลด CSV (เคลม)</button></div></div>
+        <div class="cards">
+          <div class="card"><div class="label">จำนวนใบเคลม</div><div class="value" id="cr-count">0</div></div>
+          <div class="card"><div class="label">เพิ่มเงินรวม</div><div class="value red" id="cr-add">0</div></div>
+          <div class="card"><div class="label">เคลมเลนส์</div><div class="value" id="cr-lens">0</div></div>
+          <div class="card"><div class="label">เคลมกรอบแว่น</div><div class="value" id="cr-frame">0</div></div>
+        </div>
+        <div class="panel"><h3 style="margin-top:0">เคลมแยกตามสาขา</h3><div id="cr-branch"></div></div>
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">รายการเคลมในช่วงที่เลือก</h3>
+            <input id="cr-search" placeholder="ค้นหา CN / ลูกค้า / เหตุผล..." oninput="renderReport()" style="max-width:300px">
+          </div>
+          <div id="cr-list" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="panel"><h3 style="margin-top:0">ยอดขายแยกตามสาขา</h3><div id="rp-branch-break"></div></div>
-  <div class="grid2">
-    <div class="panel"><h3 style="margin-top:0">ยอดขายแยกตามหมวดสินค้า</h3><div id="rp-cat"></div></div>
-    <div class="panel"><h3 style="margin-top:0">ยอดขายแยกตามแบรนด์</h3><div id="rp-brand"></div></div>
-  </div>
-  <div class="panel"><h3 style="margin-top:0">ลูกค้ายอดซื้อสูงสุด / ซื้อบ่อย</h3><div id="rp-top"></div></div>
-  <div class="panel"><h3 style="margin-top:0">รายการขายในช่วงที่เลือก</h3><div id="rp-list"></div></div>
 </section>
 
 <!-- ===== LOG ===== -->
@@ -1144,6 +1188,81 @@ function renderReport(){
     top.map((e,i)=>`<tr><td>${i+1}</td><td><span class="link" onclick="viewCustomer('${e[0]}')">${esc(custName(e[0]))}</span></td><td class="num">${e[1].n}</td><td class="num"><b>${fmt(e[1].amt)}</b></td></tr>`).join('')+'</table>'
     :'<div class="empty">ไม่มีข้อมูลลูกค้าสมาชิกในช่วงนี้</div>';
   document.getElementById('rp-list').innerHTML=list.length?salesTable(list):'<div class="empty">ไม่มีการขายในช่วงที่เลือก</div>';
+  renderProductReport(list);
+  renderClaimReport(list);
+}
+function claimWarrantyStr(s){const a=[];if(s.warranty&&s.warranty.lens)a.push('เลนส์');if(s.warranty&&s.warranty.frame)a.push('กรอบ');return a.join('+');}
+function renderClaimReport(list){
+  const claims=list.filter(s=>s.kind==='claim').sort((a,b)=>b.date<a.date?-1:1);
+  const addSum=claims.reduce((a,s)=>a+(s.addAmount!=null?s.addAmount:(s.total||0)),0);
+  document.getElementById('cr-count').textContent=fmt(claims.length);
+  document.getElementById('cr-add').textContent=fmt(addSum)+' ฿';
+  document.getElementById('cr-lens').textContent=fmt(claims.filter(s=>s.claimType&&s.claimType.lens).length);
+  document.getElementById('cr-frame').textContent=fmt(claims.filter(s=>s.claimType&&s.claimType.frame).length);
+  const byBranch={};claims.forEach(s=>{const b=s.branch||'สาขาหลัก';byBranch[b]=byBranch[b]||{n:0,amt:0};byBranch[b].n++;byBranch[b].amt+=(s.addAmount!=null?s.addAmount:(s.total||0));});
+  const be=Object.entries(byBranch).sort((a,b)=>b[1].n-a[1].n);
+  document.getElementById('cr-branch').innerHTML=be.length?
+    '<table><tr><th>สาขา</th><th class="num">จำนวนใบ</th><th class="num">เพิ่มเงินรวม</th></tr>'+
+    be.map(([b,v])=>`<tr><td>${esc(b)}</td><td class="num"><b>${fmt(v.n)}</b></td><td class="num">${fmt(v.amt)}</td></tr>`).join('')+'</table>'
+    :'<div class="empty">ไม่มีใบเคลมในช่วงที่เลือก</div>';
+  const q=(document.getElementById('cr-search').value||'').toLowerCase().trim();
+  let rows=claims;
+  if(q)rows=rows.filter(s=>((s.cn||'')+' '+custName(s.customerId)+' '+(s.reason||'')+' '+claimTypeStr(s)+' '+(s.branch||'')).toLowerCase().includes(q));
+  document.getElementById('cr-list').innerHTML=rows.length?
+    '<table><tr><th>วันที่</th><th>CN</th><th>ลูกค้า</th><th>สาขา</th><th>ประเภท</th><th>เหตุผล</th><th class="num">เพิ่มเงิน</th><th class="no-print"></th></tr>'+
+    rows.map(s=>`<tr><td>${thDate(s.date)}</td><td>${esc(s.cn||'-')}</td><td>${s.customerId?`<span class="link" onclick="viewCustomer('${s.customerId}')">${esc(custName(s.customerId))}</span>`:'ลูกค้าทั่วไป'}</td><td>${esc(s.branch||'สาขาหลัก')}</td><td>${esc(claimTypeStr(s)||'-')}${claimWarrantyStr(s)?`<div class="muted">ในประกัน: ${esc(claimWarrantyStr(s))}</div>`:''}</td><td>${esc(s.reason||'-')}</td><td class="num"><b>${fmt(s.addAmount!=null?s.addAmount:(s.total||0))}</b>${s.deposit?`<div class="muted">มัดจำ ${fmt(s.deposit)}</div>`:''}</td><td class="no-print"><button class="btn sm ghost" onclick="openClaim('${s.id}')">ใบเคลม</button></td></tr>`).join('')+'</table>'
+    :`<div class="empty">${q?'ไม่พบใบเคลมที่ค้นหา':'ไม่มีใบเคลมในช่วงที่เลือก'}</div>`;
+}
+function exportClaimCSV(){
+  const claims=filteredSales().filter(s=>s.kind==='claim').sort((a,b)=>b.date<a.date?-1:1);
+  const rows=[['วันที่','CN','ลูกค้า','สาขา','ประเภท','เหตุผล','เปลี่ยนรุ่น/กรอบ','เปลี่ยนค่าสายตา','ในประกัน','เพิ่มเงิน','มัดจำ','คงเหลือ','นัดรับ','หมายเหตุ']];
+  claims.forEach(s=>{const add=(s.addAmount!=null?s.addAmount:(s.total||0));rows.push([s.date,s.cn||'',custName(s.customerId),s.branch||'สาขาหลัก',claimTypeStr(s),s.reason||'',s.changeModel||'',s.changeRx||'',claimWarrantyStr(s),add,s.deposit||0,Math.max(0,add-(s.deposit||0)),s.appointDate||'',s.note||'']);});
+  download(`รายงานเคลม-${today()}.csv`,csv(rows),'text/csv;charset=utf-8');
+}
+function repTab(name){
+  document.querySelectorAll('.rep-section').forEach(s=>s.classList.remove('active'));
+  const sec=document.getElementById('rep-'+name);if(sec)sec.classList.add('active');
+  document.querySelectorAll('.rep-nav button').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('rtab-'+name);if(btn)btn.classList.add('active');
+}
+function productAgg(list){
+  const byCat={},byProd={};
+  list.forEach(s=>s.items.forEach(i=>{
+    const qty=i.qty||0,amt=lineNet(i),c=i.category||'อื่นๆ';
+    byCat[c]=byCat[c]||{qty:0,amt:0};byCat[c].qty+=qty;byCat[c].amt+=amt;
+    const key=c+'||'+(i.brand||'')+'||'+(i.name||'');
+    byProd[key]=byProd[key]||{cat:c,brand:i.brand||'-',name:i.name||'-',qty:0,amt:0};
+    byProd[key].qty+=qty;byProd[key].amt+=amt;
+  }));
+  return {byCat,byProd};
+}
+function renderProductReport(list){
+  const {byCat,byProd}=productAgg(list);
+  const tQty=Object.values(byCat).reduce((a,x)=>a+x.qty,0);
+  const tAmt=Object.values(byCat).reduce((a,x)=>a+x.amt,0);
+  const prods=Object.values(byProd);
+  document.getElementById('pr-qty').textContent=fmt(tQty);
+  document.getElementById('pr-amt').textContent=fmt(tAmt)+' ฿';
+  document.getElementById('pr-kinds').textContent=fmt(prods.length);
+  const cats=Object.entries(byCat).sort((a,b)=>b[1].qty-a[1].qty);
+  document.getElementById('pr-cat').innerHTML=cats.length?
+    '<table><tr><th>หมวดสินค้า</th><th class="num">จำนวนชิ้น</th><th class="num">ยอดขาย</th></tr>'+
+    cats.map(([c,v])=>`<tr><td><span class="badge cat-${esc(c)}">${esc(c)}</span></td><td class="num"><b>${fmt(v.qty)}</b></td><td class="num">${fmt(v.amt)}</td></tr>`).join('')+
+    `<tr class="qtyrow" style="border-top:2px solid var(--ink)"><td><b>รวม</b></td><td class="num"><b>${fmt(tQty)}</b></td><td class="num"><b>${fmt(tAmt)}</b></td></tr>`+'</table>'
+    :'<div class="empty">ไม่มีการขายสินค้าในช่วงที่เลือก</div>';
+  const q=(document.getElementById('pr-search').value||'').toLowerCase().trim();
+  let rows=prods.sort((a,b)=>b.qty-a.qty);
+  if(q)rows=rows.filter(p=>(p.cat+' '+p.brand+' '+p.name).toLowerCase().includes(q));
+  document.getElementById('pr-list').innerHTML=rows.length?
+    '<table><tr><th>หมวด</th><th>แบรนด์</th><th>รุ่น/สินค้า</th><th class="num">จำนวนชิ้น</th><th class="num">ยอดขาย</th></tr>'+
+    rows.map(p=>`<tr><td><span class="badge cat-${esc(p.cat)}">${esc(p.cat)}</span></td><td>${esc(p.brand)}</td><td>${esc(p.name)}</td><td class="num"><b>${fmt(p.qty)}</b></td><td class="num">${fmt(p.amt)}</td></tr>`).join('')+'</table>'
+    :`<div class="empty">${q?'ไม่พบสินค้าที่ค้นหา':'ไม่มีการขายสินค้าในช่วงที่เลือก'}</div>`;
+}
+function exportProductCSV(){
+  const {byProd}=productAgg(filteredSales());
+  const rows=[['หมวด','แบรนด์','รุ่น/สินค้า','จำนวนชิ้น','ยอดขาย']];
+  Object.values(byProd).sort((a,b)=>b.qty-a.qty).forEach(p=>rows.push([p.cat,p.brand,p.name,p.qty,p.amt]));
+  download(`รายงานสินค้า-${today()}.csv`,csv(rows),'text/csv;charset=utf-8');
 }
 function barTable(obj,total){
   const e=Object.entries(obj).sort((a,b)=>b[1]-a[1]);
