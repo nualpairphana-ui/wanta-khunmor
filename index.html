@@ -62,6 +62,17 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
 .close-x{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)}
 .rx-table th,.rx-table td{text-align:center;padding:5px}
 .rx-table input{text-align:center;padding:6px 4px}
+.rx-types{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:12px;align-items:center}
+.rx-ck{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--ink);margin:0;white-space:nowrap}
+.rx-ck input{width:auto;margin:0}
+.rx-tv{width:64px!important;padding:4px 6px!important;text-align:center}
+.rx-full input{min-width:50px}
+.rx-pd{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;align-items:flex-end}
+.rx-pd-grp{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.rx-pd-grp>label{margin:0;white-space:nowrap}
+.rx-pd-grp span{font-size:13px;color:var(--muted)}
+.rx-pd-grp input{width:66px;text-align:center}
+@media(max-width:640px){.rx-full th,.rx-full td{padding:3px 2px;font-size:12px}.rx-full input{min-width:38px;padding:5px 2px}}
 .muted{color:var(--muted);font-size:13px}
 .empty{text-align:center;color:var(--muted);padding:30px 0}
 .total-line{font-size:20px;font-weight:600;text-align:right;margin:12px 0}
@@ -171,13 +182,8 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
     </div>
     <details id="sale-rx-box" style="margin-bottom:14px;border:1px solid var(--line);border-radius:10px;padding:12px 16px">
       <summary style="cursor:pointer;font-weight:500">👓 ค่าสายตาสำหรับบิลนี้ <span class="muted">(กดเพื่อกรอก — จะบันทึกติดบิลไว้ดูย้อนหลังได้)</span></summary>
-      <table class="rx-table" style="margin-top:10px;max-width:420px">
-        <tr><th></th><th>SPH</th><th>CYL</th><th>AXIS</th><th>ADD</th></tr>
-        <tr><td><b>R</b></td><td><input id="s-rx-r-sph"></td><td><input id="s-rx-r-cyl"></td><td><input id="s-rx-r-axis"></td><td><input id="s-rx-r-add"></td></tr>
-        <tr><td><b>L</b></td><td><input id="s-rx-l-sph"></td><td><input id="s-rx-l-cyl"></td><td><input id="s-rx-l-axis"></td><td><input id="s-rx-l-add"></td></tr>
-      </table>
-      <div class="row" style="margin-top:10px;max-width:200px"><div><label>PD (มม.)</label><input id="s-rx-pd"></div></div>
-      <p class="muted" style="margin-top:4px">ถ้าเลือกลูกค้าไว้ ระบบจะอัปเดตค่าสายตาล่าสุดในประวัติลูกค้าให้ด้วย</p>
+      <div id="s-rx-editor" style="margin-top:10px"></div>
+      <p class="muted" style="margin-top:8px">ถ้าเลือกลูกค้าไว้ ระบบจะอัปเดตค่าสายตาล่าสุดในประวัติลูกค้าให้ด้วย</p>
     </details>
     <h3>รายการสินค้า</h3>
     <div class="row">
@@ -297,7 +303,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
   </div>
   <div class="panel">
     <h3 style="margin-top:0">นำเข้าลูกค้าเก่า (CSV)</h3>
-    <p class="muted">เตรียมไฟล์ CSV ที่มีหัวตาราง: HN, ชื่อ, เบอร์โทร, วันเกิด, ที่อยู่, R-SPH, R-CYL, R-AXIS, R-ADD, L-SPH, L-CYL, L-AXIS, L-ADD, PD, หมายเหตุ (มีแค่ "ชื่อ" ก็นำเข้าได้ คอลัมน์อื่นเว้นได้) — ถ้ามีคอลัมน์ HN จะใช้เลขเดิมจากระบบเก่า ถ้าไม่มีจะรันเลขให้ใหม่ และข้ามรายชื่อที่ซ้ำให้อัตโนมัติ</p>
+    <p class="muted">เตรียมไฟล์ CSV ที่มีหัวตาราง: HN, ชื่อ, เบอร์โทร, วันเกิด, อายุ, ที่อยู่, R-SPH, R-CYL, R-AXIS, R-ADD, R-PRISM, R-BASE, L-SPH, L-CYL, L-AXIS, L-ADD, L-PRISM, L-BASE, PD-FAR-R, PD-FAR-L, PD-NEAR-R, PD-NEAR-L, PD, SH, ประเภทใบสั่ง, หมายเหตุ (มีแค่ "ชื่อ" ก็นำเข้าได้ คอลัมน์อื่นเว้นได้) — ถ้ามีคอลัมน์ HN จะใช้เลขเดิมจากระบบเก่า ถ้าไม่มีจะรันเลขให้ใหม่ และข้ามรายชื่อที่ซ้ำให้อัตโนมัติ</p>
     <div style="margin-top:12px">
       <button class="btn" onclick="document.getElementById('import-cust-file').click()">เลือกไฟล์ CSV นำเข้า</button>
       <input type="file" id="import-cust-file" accept=".csv,.txt" style="display:none" onchange="importCust(this)">
@@ -319,16 +325,12 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
     </div>
     <div class="row">
       <div><label>วันเกิด</label><input type="date" id="c-birth"></div>
+      <div style="max-width:90px"><label>อายุ (ปี)</label><input id="c-age" inputmode="numeric" placeholder="เช่น 45"></div>
       <div style="flex:2"><label>ที่อยู่</label><input id="c-addr"></div>
     </div>
     <h3>ค่าสายตา (ใบสั่งแว่นล่าสุด)</h3>
-    <table class="rx-table">
-      <tr><th></th><th>SPH</th><th>CYL</th><th>AXIS</th><th>ADD</th></tr>
-      <tr><td><b>R</b></td><td><input id="rx-r-sph"></td><td><input id="rx-r-cyl"></td><td><input id="rx-r-axis"></td><td><input id="rx-r-add"></td></tr>
-      <tr><td><b>L</b></td><td><input id="rx-l-sph"></td><td><input id="rx-l-cyl"></td><td><input id="rx-l-axis"></td><td><input id="rx-l-add"></td></tr>
-    </table>
-    <div class="row" style="margin-top:10px">
-      <div><label>PD (มม.)</label><input id="rx-pd"></div>
+    <div id="rx-editor"></div>
+    <div class="row" style="margin-top:12px">
       <div style="flex:2"><label>หมายเหตุ</label><input id="c-note" placeholder="เช่น แพ้วัสดุ, ประวัติโรคตา..."></div>
     </div>
     <div style="text-align:right;margin-top:14px">
@@ -467,14 +469,10 @@ function openCustModal(id){
   document.getElementById('c-name').value=c?c.name:'';
   document.getElementById('c-phone').value=c?c.phone||'':'';
   document.getElementById('c-birth').value=c?c.birth||'':'';
+  document.getElementById('c-age').value=c?c.age||'':'';
   document.getElementById('c-addr').value=c?c.addr||'':'';
   document.getElementById('c-note').value=c?c.note||'':'';
-  const rx=c&&c.rx?c.rx:{r:{},l:{},pd:''};
-  ['sph','cyl','axis','add'].forEach(k=>{
-    document.getElementById('rx-r-'+k).value=rx.r[k]||'';
-    document.getElementById('rx-l-'+k).value=rx.l[k]||'';
-  });
-  document.getElementById('rx-pd').value=rx.pd||'';
+  rxSet('rx',c&&c.rx?c.rx:{});
   document.getElementById('cust-modal').classList.add('open');
   setTimeout(()=>document.getElementById('c-name').focus(),50);
 }
@@ -484,12 +482,9 @@ function saveCustomer(){
   const id=document.getElementById('c-id').value;
   const code=document.getElementById('c-code').value.trim()||genHN();
   if(state.customers.some(x=>x.code===code&&x.id!==id)){alert('เลข HN "'+code+'" ถูกใช้กับลูกค้ารายอื่นแล้ว');return;}
-  const rx={r:{},l:{},pd:document.getElementById('rx-pd').value.trim()};
-  ['sph','cyl','axis','add'].forEach(k=>{
-    rx.r[k]=document.getElementById('rx-r-'+k).value.trim();
-    rx.l[k]=document.getElementById('rx-l-'+k).value.trim();
-  });
+  const rx=rxGet('rx');
   const data={name,code,phone:document.getElementById('c-phone').value.trim(),birth:document.getElementById('c-birth').value,
+    age:document.getElementById('c-age').value.trim(),
     addr:document.getElementById('c-addr').value.trim(),note:document.getElementById('c-note').value.trim(),rx};
   let newId=null;
   if(id){Object.assign(state.customers.find(x=>x.id===id),data);}
@@ -505,14 +500,16 @@ function viewCustomer(id){
   const c=state.customers.find(x=>x.id===id);if(!c)return;
   const hist=state.sales.filter(s=>s.customerId===id).sort((a,b)=>b.date<a.date?-1:1);
   const spent=hist.reduce((a,s)=>a+s.total,0);
-  const rxRow=(e,o)=>`<tr><td><b>${e}</b></td><td>${esc(o.sph||'-')}</td><td>${esc(o.cyl||'-')}</td><td>${esc(o.axis||'-')}</td><td>${esc(o.add||'-')}</td></tr>`;
+  const rxRow=(e,o)=>{o=o||{};return `<tr><td><b>${e}</b></td><td>${esc(o.sph||'-')}</td><td>${esc(o.cyl||'-')}</td><td>${esc(o.axis||'-')}</td><td>${esc(o.add||'-')}</td><td>${esc(o.prism||'-')}</td><td>${esc(o.base||'-')}</td></tr>`;};
+  const rxType=rxTypeStr(c.rx);
   let h=`<h2>${esc(c.name)} <button class="close-x" onclick="closeModal('view-modal')">✕</button></h2>
-  <p class="muted">HN ${esc(c.code)} · โทร ${esc(c.phone||'-')} · เกิด ${thDate(c.birth)}</p>
+  <p class="muted">HN ${esc(c.code)} · โทร ${esc(c.phone||'-')} · เกิด ${thDate(c.birth)}${c.age?' · อายุ '+esc(c.age)+' ปี':''}</p>
   ${c.addr?`<p class="muted">ที่อยู่: ${esc(c.addr)}</p>`:''}
   ${c.note?`<p class="muted">📝 ${esc(c.note)}</p>`:''}
   <h3>ค่าสายตา</h3>
-  <table class="rx-table"><tr><th></th><th>SPH</th><th>CYL</th><th>AXIS</th><th>ADD</th></tr>${rxRow('R',c.rx?.r||{})}${rxRow('L',c.rx?.l||{})}</table>
-  <p class="muted" style="margin-top:6px">PD: ${esc(c.rx?.pd||'-')} มม.</p>
+  ${rxType?`<p class="muted" style="margin-bottom:6px">ประเภทใบสั่ง: ${esc(rxType)}</p>`:''}
+  <table class="rx-table"><tr><th></th><th>SPH</th><th>CYL</th><th>AXIS</th><th>ADD</th><th>Prism</th><th>Base</th></tr>${rxRow('R',c.rx?.r||{})}${rxRow('L',c.rx?.l||{})}</table>
+  <p class="muted" style="margin-top:6px">${esc(pdStr(c.rx)||'PD -')} · SH: ${esc(c.rx?.sh||'-')}</p>
   <h3>ประวัติการซื้อ (${hist.length} บิล · รวม ${fmt(spent)} บาท)</h3>`;
   h+=hist.length?salesTable(hist):'<div class="empty">ยังไม่มีประวัติการซื้อ</div>';
   h+=`<div style="text-align:right;margin-top:14px"><button class="btn ghost" onclick="closeModal('view-modal')">ปิด</button> <button class="btn" onclick="closeModal('view-modal');openCustModal('${c.id}')">แก้ไขข้อมูล</button></div>`;
@@ -546,28 +543,99 @@ function pickCust(id){
   document.getElementById('cust-drop').style.display='none';
   fillSaleRx(c.rx);
 }
-function fillSaleRx(rx){
-  rx=rx||{r:{},l:{},pd:''};
-  ['sph','cyl','axis','add'].forEach(k=>{
-    document.getElementById('s-rx-r-'+k).value=rx.r?.[k]||'';
-    document.getElementById('s-rx-l-'+k).value=rx.l?.[k]||'';
-  });
-  document.getElementById('s-rx-pd').value=rx.pd||'';
+// ===== ค่าสายตา (prescription) helpers =====
+const RX_EYE_KEYS=['sph','cyl','axis','add','prism','base'];
+function buildRxEditor(P){
+  const heads=['SPH','CYL','AXIS','ADD','Prism','Base'].map(x=>`<th>${x}</th>`).join('');
+  const row=e=>`<tr><td><b>${e.toUpperCase()}</b></td>${RX_EYE_KEYS.map(k=>`<td><input id="${P}-${e}-${k}"></td>`).join('')}</tr>`;
+  const ck=(id,lbl)=>`<label class="rx-ck"><input type="checkbox" id="${P}-t-${id}"> ${lbl}</label>`;
+  const ckv=(id,lbl)=>`<label class="rx-ck"><input type="checkbox" id="${P}-t-${id}"> ${lbl}</label><input class="rx-tv" id="${P}-t-${id}val" placeholder="">`;
+  return `<div class="rx-types">${ck('distance','Distance')}${ck('reading','Reading')}${ckv('bf','BF')}${ck('progressive','Progressive')}${ckv('corridor','Corridor')}${ckv('degression','Degression')}</div>
+  <table class="rx-table rx-full"><tr><th></th>${heads}</tr>${row('r')}${row('l')}</table>
+  <div class="rx-pd">
+    <div class="rx-pd-grp"><label>PD ไกล</label><span>R</span><input id="${P}-pdfar-r"><span>L</span><input id="${P}-pdfar-l"><span>มม.</span></div>
+    <div class="rx-pd-grp"><label>PD ใกล้</label><span>R</span><input id="${P}-pdnear-r"><span>L</span><input id="${P}-pdnear-l"><span>มม.</span></div>
+    <div class="rx-pd-grp"><label>SH</label><input id="${P}-sh"></div>
+  </div>`;
 }
-function getSaleRx(){
-  const rx={r:{},l:{},pd:document.getElementById('s-rx-pd').value.trim()};
-  let has=!!rx.pd;
-  ['sph','cyl','axis','add'].forEach(k=>{
-    rx.r[k]=document.getElementById('s-rx-r-'+k).value.trim();
-    rx.l[k]=document.getElementById('s-rx-l-'+k).value.trim();
-    if(rx.r[k]||rx.l[k])has=true;
-  });
-  return has?rx:null;
+function rxSet(P,rx){
+  rx=rx||{};
+  const el=id=>document.getElementById(P+'-'+id);
+  const sv=(id,v)=>{const e=el(id);if(e)e.value=v||'';};
+  const sc=(id,v)=>{const e=el(id);if(e)e.checked=!!v;};
+  const eye=(s,o)=>{o=o||{};RX_EYE_KEYS.forEach(k=>sv(s+'-'+k,o[k]));};
+  eye('r',rx.r);eye('l',rx.l);
+  const t=rx.type||{};
+  sc('t-distance',t.distance);sc('t-reading',t.reading);
+  sc('t-bf',t.bf);sv('t-bfval',t.bfVal);
+  sc('t-progressive',t.progressive);
+  sc('t-corridor',t.corridor);sv('t-corridorval',t.corridorVal);
+  sc('t-degression',t.degression);sv('t-degressionval',t.degressionVal);
+  const pf=rx.pdFar||{},pn=rx.pdNear||{};
+  sv('pdfar-r',pf.r||rx.pd||'');sv('pdfar-l',pf.l);
+  sv('pdnear-r',pn.r);sv('pdnear-l',pn.l);
+  sv('sh',rx.sh);
 }
+function rxGet(P){
+  const el=id=>document.getElementById(P+'-'+id);
+  const gv=id=>{const e=el(id);return e?e.value.trim():'';};
+  const gc=id=>{const e=el(id);return e?e.checked:false;};
+  const eye=s=>{const o={};RX_EYE_KEYS.forEach(k=>o[k]=gv(s+'-'+k));return o;};
+  return {
+    type:{distance:gc('t-distance'),reading:gc('t-reading'),bf:gc('t-bf'),bfVal:gv('t-bfval'),
+      progressive:gc('t-progressive'),corridor:gc('t-corridor'),corridorVal:gv('t-corridorval'),
+      degression:gc('t-degression'),degressionVal:gv('t-degressionval')},
+    r:eye('r'),l:eye('l'),
+    pdFar:{r:gv('pdfar-r'),l:gv('pdfar-l')},
+    pdNear:{r:gv('pdnear-r'),l:gv('pdnear-l')},
+    sh:gv('sh')
+  };
+}
+function rxHasData(rx){
+  if(!rx)return false;
+  const eyeHas=o=>o&&RX_EYE_KEYS.some(k=>o[k]);
+  const t=rx.type||{};
+  const typeHas=t.distance||t.reading||t.bf||t.progressive||t.corridor||t.degression||t.bfVal||t.corridorVal||t.degressionVal;
+  const pdHas=(rx.pdFar&&(rx.pdFar.r||rx.pdFar.l))||(rx.pdNear&&(rx.pdNear.r||rx.pdNear.l))||rx.pd;
+  return !!(eyeHas(rx.r)||eyeHas(rx.l)||rx.sh||pdHas||typeHas);
+}
+function pdStr(rx){
+  if(!rx)return '';
+  const f=rx.pdFar||{},n=rx.pdNear||{};
+  const parts=[];
+  if(f.r||f.l)parts.push('PDไกล '+(f.r||'-')+'/'+(f.l||'-'));
+  if(n.r||n.l)parts.push('PDใกล้ '+(n.r||'-')+'/'+(n.l||'-'));
+  if(!parts.length&&rx.pd)parts.push('PD '+rx.pd);
+  return parts.join(' · ');
+}
+function rxTypeStr(rx){
+  const t=rx&&rx.type;if(!t)return '';
+  const a=[];
+  if(t.distance)a.push('Distance');
+  if(t.reading)a.push('Reading');
+  if(t.bf)a.push('BF'+(t.bfVal?' '+t.bfVal:''));
+  if(t.progressive)a.push('Progressive');
+  if(t.corridor)a.push('Corridor'+(t.corridorVal?' '+t.corridorVal:''));
+  if(t.degression)a.push('Degression'+(t.degressionVal?' '+t.degressionVal:''));
+  return a.join(', ');
+}
+function parseRxType(s){
+  s=s||'';const has=k=>new RegExp(k,'i').test(s);
+  const val=k=>{const m=s.match(new RegExp(k+'\\s*([\\d.+-]+)','i'));return m?m[1]:'';};
+  return{distance:has('Distance'),reading:has('Reading'),bf:has('BF'),bfVal:val('BF'),
+    progressive:has('Progressive'),corridor:has('Corridor'),corridorVal:val('Corridor'),
+    degression:has('Degression'),degressionVal:val('Degression')};
+}
+function fillSaleRx(rx){rxSet('s-rx',rx||{});}
+function getSaleRx(){const rx=rxGet('s-rx');return rxHasData(rx)?rx:null;}
 function rxStr(rx){
   if(!rx)return '';
-  const e=o=>['sph','cyl','axis','add'].map(k=>o?.[k]||'-').join(' / ');
-  return `R: ${e(rx.r)} | L: ${e(rx.l)}${rx.pd?' | PD '+rx.pd:''}`;
+  const e=o=>{o=o||{};let s=['sph','cyl','axis','add'].map(k=>o[k]||'-').join(' / ');if(o.prism||o.base)s+=' (Pr '+(o.prism||'-')+' Bs '+(o.base||'-')+')';return s;};
+  let s=`R: ${e(rx.r)} | L: ${e(rx.l)}`;
+  const pd=pdStr(rx);if(pd)s+=' | '+pd;
+  if(rx.sh)s+=' | SH '+rx.sh;
+  const ty=rxTypeStr(rx);if(ty)s=ty+' — '+s;
+  return s;
 }
 function addItem(){
   const name=document.getElementById('it-name').value.trim();
@@ -623,7 +691,7 @@ function saveSale(){
     if(!confirm(`ไม่พบ "${inputName}" ในระบบ — สร้างเป็นลูกค้าใหม่เลยหรือไม่?\n(ตกลง = สร้างใหม่, ยกเลิก = บันทึกเป็นลูกค้าทั่วไป)`)){
       finishSale(date,null);return;
     }
-    const nc={id:uid(),code:genHN(),name:inputName,phone:'',rx:{r:{},l:{},pd:''},createdAt:Date.now()};
+    const nc={id:uid(),code:genHN(),name:inputName,phone:'',rx:{r:{},l:{},pd:'',sh:''},createdAt:Date.now()};
     state.customers.push(nc);finishSale(date,nc.id);return;
   }
   finishSale(date,cid);
@@ -796,8 +864,9 @@ function exportSalesCSV(){
   download(`ยอดขาย-${today()}.csv`,csv(rows),'text/csv;charset=utf-8');
 }
 function exportCustCSV(){
-  const rows=[['HN','ชื่อ','เบอร์โทร','วันเกิด','ที่อยู่','R-SPH','R-CYL','R-AXIS','R-ADD','L-SPH','L-CYL','L-AXIS','L-ADD','PD','หมายเหตุ']];
-  state.customers.forEach(c=>rows.push([c.code,c.name,c.phone,c.birth,c.addr,c.rx?.r.sph,c.rx?.r.cyl,c.rx?.r.axis,c.rx?.r.add,c.rx?.l.sph,c.rx?.l.cyl,c.rx?.l.axis,c.rx?.l.add,c.rx?.pd,c.note]));
+  const rows=[['HN','ชื่อ','เบอร์โทร','วันเกิด','อายุ','ที่อยู่','R-SPH','R-CYL','R-AXIS','R-ADD','R-PRISM','R-BASE','L-SPH','L-CYL','L-AXIS','L-ADD','L-PRISM','L-BASE','PD-FAR-R','PD-FAR-L','PD-NEAR-R','PD-NEAR-L','PD','SH','ประเภทใบสั่ง','หมายเหตุ']];
+  state.customers.forEach(c=>{const r=c.rx?.r||{},l=c.rx?.l||{},pf=c.rx?.pdFar||{},pn=c.rx?.pdNear||{};
+    rows.push([c.code,c.name,c.phone,c.birth,c.age,c.addr,r.sph,r.cyl,r.axis,r.add,r.prism,r.base,l.sph,l.cyl,l.axis,l.add,l.prism,l.base,pf.r,pf.l,pn.r,pn.l,c.rx?.pd,c.rx?.sh,rxTypeStr(c.rx),c.note]);});
   download(`ลูกค้า-${today()}.csv`,csv(rows),'text/csv;charset=utf-8');
 }
 // ---- import customers from CSV ----
@@ -832,9 +901,11 @@ function importCust(inp){
       const phone=g(row,'เบอร์โทร');
       if(state.customers.some(c=>c.name===name&&(c.phone||'')===phone)){skipped++;return;}
       state.customers.push({id:uid(),code:g(row,'HN')||g(row,'รหัส')||genHN(),name,phone,
-        birth:g(row,'วันเกิด'),addr:g(row,'ที่อยู่'),note:g(row,'หมายเหตุ'),
-        rx:{r:{sph:g(row,'R-SPH'),cyl:g(row,'R-CYL'),axis:g(row,'R-AXIS'),add:g(row,'R-ADD')},
-            l:{sph:g(row,'L-SPH'),cyl:g(row,'L-CYL'),axis:g(row,'L-AXIS'),add:g(row,'L-ADD')},pd:g(row,'PD')},
+        birth:g(row,'วันเกิด'),age:g(row,'อายุ'),addr:g(row,'ที่อยู่'),note:g(row,'หมายเหตุ'),
+        rx:{r:{sph:g(row,'R-SPH'),cyl:g(row,'R-CYL'),axis:g(row,'R-AXIS'),add:g(row,'R-ADD'),prism:g(row,'R-PRISM'),base:g(row,'R-BASE')},
+            l:{sph:g(row,'L-SPH'),cyl:g(row,'L-CYL'),axis:g(row,'L-AXIS'),add:g(row,'L-ADD'),prism:g(row,'L-PRISM'),base:g(row,'L-BASE')},
+            pdFar:{r:g(row,'PD-FAR-R'),l:g(row,'PD-FAR-L')},pdNear:{r:g(row,'PD-NEAR-R'),l:g(row,'PD-NEAR-L')},
+            pd:g(row,'PD'),sh:g(row,'SH'),type:parseRxType(g(row,'ประเภทใบสั่ง'))},
         createdAt:Date.now()});
       added++;
     });
@@ -959,6 +1030,8 @@ function refreshUI(){go(curPage);}
 // ============ INIT ============
 document.addEventListener('click',e=>{if(!e.target.closest('.cust-pick'))document.getElementById('cust-drop').style.display='none';});
 document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+document.getElementById('rx-editor').innerHTML=buildRxEditor('rx');
+document.getElementById('s-rx-editor').innerHTML=buildRxEditor('s-rx');
 document.getElementById('sale-date').value=today();
 quickRange('month',document.querySelector('#page-report .pill.active'));
 fillBrands();renderCart();renderDash();initCloud();
