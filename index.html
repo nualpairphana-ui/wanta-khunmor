@@ -222,9 +222,11 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
       </div>
       ยอดสุทธิ <span id="cart-total">0</span> บาท
       <div style="font-size:14px;font-weight:400;margin-top:4px">มัดจำ <input type="number" id="sale-deposit" min="0" placeholder="0" style="width:110px;display:inline-block" oninput="renderCart()"> บาท · คงเหลือ <b id="cart-remain">0</b> บาท</div>
+      <div style="font-size:14px;font-weight:400;margin-top:6px"><label class="rx-ck" style="justify-content:flex-end"><input type="checkbox" id="sale-paidfull" onchange="togglePaidFull()"> ชำระเต็มจำนวน (กรอกยอดชำระเต็มอัตโนมัติ)</label></div>
     </div>
     <div class="row">
-      <div><label>หมายเหตุ</label><input id="sale-note" placeholder="เช่น นัดรับของ..."></div>
+      <div><label>วันนัดรับ</label><input type="date" id="sale-appoint"></div>
+      <div style="flex:2"><label>หมายเหตุ</label><input id="sale-note" placeholder="เช่น นัดรับของ..."></div>
     </div>
     <div style="text-align:right"><button class="btn red" style="font-size:16px;padding:11px 34px" onclick="saveSale()">บันทึกการขาย</button></div>
   </div>
@@ -294,6 +296,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
       <button id="rtab-summary" class="active" onclick="repTab('summary')">ยอดขายรวม</button>
       <button id="rtab-product" onclick="repTab('product')">ขายตามสินค้า</button>
       <button id="rtab-claim" onclick="repTab('claim')">รายงานการเคลม</button>
+      <button id="rtab-appoint" onclick="repTab('appoint')">รายงานการนัดรับ</button>
     </div>
     <div>
       <div class="rep-section active" id="rep-summary">
@@ -400,6 +403,38 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
             <input id="cr-search" placeholder="ค้นหา CN / ลูกค้า / เหตุผล..." oninput="renderClaim()" style="max-width:300px">
           </div>
           <div id="cr-list" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <div class="rep-section" id="rep-appoint">
+        <div class="panel no-print">
+          <div class="pill-row">
+            <button class="pill active" onclick="repRange('today',this,'af-from','af-to',renderAppoint)">วันนี้</button>
+            <button class="pill" onclick="repRange('week',this,'af-from','af-to',renderAppoint)">7 วันข้างหน้า/หลัง</button>
+            <button class="pill" onclick="repRange('month',this,'af-from','af-to',renderAppoint)">เดือนนี้</button>
+            <button class="pill" onclick="repRange('all',this,'af-from','af-to',renderAppoint)">ทั้งหมด</button>
+          </div>
+          <div class="row">
+            <div><label>นัดรับ ตั้งแต่วันที่</label><input type="date" id="af-from" onchange="renderAppoint()"></div>
+            <div><label>ถึงวันที่</label><input type="date" id="af-to" onchange="renderAppoint()"></div>
+            <div><label>สาขา</label><select id="af-branch" onchange="renderAppoint()"><option value="">ทุกสาขา</option></select></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="muted" style="margin-right:2px">ส่งออกข้อมูล:</span>
+            <button class="btn ghost" onclick="exportAppointXLSX()">Excel</button>
+            <button class="btn ghost" onclick="exportAppointCSV()">CSV</button>
+            <button class="btn ghost" onclick="window.print()">PDF</button>
+          </div>
+        </div>
+        <div class="cards">
+          <div class="card"><div class="label">จำนวนนัดรับ</div><div class="value" id="ap-count">0</div></div>
+          <div class="card"><div class="label">ยอดคงเหลือรวม (ที่ต้องเก็บ)</div><div class="value red" id="ap-remain">0</div></div>
+        </div>
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">รายการนัดรับ (เรียงตามวันนัด)</h3>
+            <input id="ap-search" placeholder="ค้นหา ลูกค้า / เลขที่บิล..." oninput="renderAppoint()" style="max-width:300px">
+          </div>
+          <div id="ap-list" style="margin-top:12px"></div>
         </div>
       </div>
     </div>
@@ -1047,11 +1082,18 @@ function renderCart(){
   const sub=cart.reduce((a,i)=>a+lineNet(i),0);
   const disc=calcDisc(sub);
   const total=sub-disc;
-  const dep=+document.getElementById('sale-deposit').value||0;
+  const pf=document.getElementById('sale-paidfull');
+  let dep=+document.getElementById('sale-deposit').value||0;
+  if(pf&&pf.checked){dep=total;document.getElementById('sale-deposit').value=total;}
   document.getElementById('cart-sub').textContent=fmt(sub);
   document.getElementById('disc-amt').textContent=fmt(disc);
   document.getElementById('cart-total').textContent=fmt(total);
   document.getElementById('cart-remain').textContent=fmt(Math.max(0,total-dep));
+}
+function togglePaidFull(){
+  const pf=document.getElementById('sale-paidfull');
+  document.getElementById('sale-deposit').readOnly=pf.checked;
+  renderCart();
 }
 function editItem(x){
   const i=cart[x];
@@ -1084,16 +1126,21 @@ function finishSale(date,cid){
   const srx=getSaleRx();
   const sub=cart.reduce((a,i)=>a+lineNet(i),0);
   const disc=calcDisc(sub);
+  const paidFull=document.getElementById('sale-paidfull').checked;
+  const total=sub-disc;
   const sale={id:uid(),billNo:'No.'+String(state.billSeq).padStart(4,'0'),date,branch:document.getElementById('sale-branch').value,customerId:cid,items:cart,rx:srx,
-    subtotal:sub,discount:disc,total:sub-disc,deposit:+document.getElementById('sale-deposit').value||0,
+    subtotal:sub,discount:disc,total,deposit:paidFull?total:(+document.getElementById('sale-deposit').value||0),paidFull,
+    appointDate:document.getElementById('sale-appoint').value,
     note:document.getElementById('sale-note').value.trim(),createdAt:Date.now()};
   state.sales.push(sale);
   if(cid&&srx){const c=state.customers.find(x=>x.id===cid);if(c)c.rx=srx;}
-  addLog('บันทึกการขาย',sale.billNo+' · '+fmt(sale.total)+' บาท · '+sale.branch+(cid?' · '+custName(cid):' · ลูกค้าทั่วไป'));
+  addLog('บันทึกการขาย',sale.billNo+' · '+fmt(sale.total)+' บาท · '+sale.branch+(cid?' · '+custName(cid):' · ลูกค้าทั่วไป')+(paidFull?' · ชำระเต็ม':''));
   save();cart=[];renderCart();
   document.getElementById('sale-note').value='';document.getElementById('sale-cust-input').value='';
   document.getElementById('sale-cust-id').value='';document.getElementById('sale-deposit').value='';
   document.getElementById('sale-disc').value='';document.getElementById('sale-disc-type').value='thb';
+  document.getElementById('sale-paidfull').checked=false;document.getElementById('sale-deposit').readOnly=false;
+  document.getElementById('sale-appoint').value='';
   fillSaleRx(null);document.getElementById('sale-rx-box').open=false;
   renderCart();toast('บันทึกการขายเรียบร้อย ✓');renderDash();
   openBill(sale.id);
@@ -1135,6 +1182,7 @@ function openBill(id){
       <div><span>มัดจำ</span><b>${fmt(dep)} บาท</b></div>
       <div class="grand"><span>คงเหลือ</span><b>${fmt(Math.max(0,s.total-dep))} บาท</b></div>
     </div>
+    ${s.appointDate?`<div class="r-cust" style="margin-top:8px"><span><b>นัดรับวันที่:</b> ${thDate(s.appointDate)}</span></div>`:''}
     <div class="r-sign">ผู้รับเงิน______________________________</div>
   </div>`;
   document.getElementById('bill-modal').classList.add('open');
@@ -1204,9 +1252,37 @@ function filteredBy(fromId,toId,branchId){
   return state.sales.filter(s=>(!f||s.date>=f)&&(!t||s.date<=t)&&(!b||(s.branch||'สาขาหลัก')===b));
 }
 function filteredSales(){return filteredBy('rp-from','rp-to','rp-branch');}
-function renderReport(){renderSummary();renderProduct();renderClaim();}
+function renderReport(){renderSummary();renderProduct();renderClaim();renderAppoint();}
 function renderProduct(){renderProductReport(filteredBy('pf-from','pf-to','pf-branch').sort((a,b)=>b.date<a.date?-1:1));}
 function renderClaim(){renderClaimReport(filteredBy('cf-from','cf-to','cf-branch').sort((a,b)=>b.date<a.date?-1:1));}
+function filteredAppoint(){
+  const f=document.getElementById('af-from').value,t=document.getElementById('af-to').value,b=document.getElementById('af-branch').value;
+  return state.sales.filter(s=>s.appointDate&&(!f||s.appointDate>=f)&&(!t||s.appointDate<=t)&&(!b||(s.branch||'สาขาหลัก')===b)).sort((a,b)=>a.appointDate<b.appointDate?-1:1);
+}
+function apItemsText(s){
+  if(s.kind==='claim')return (claimTypeStr(s)||'เคลม')+(s.reason?' · '+s.reason:'');
+  return (s.items||[]).map(i=>(i.brand?i.brand+' ':'')+i.name+' ×'+i.qty).join(', ');
+}
+function renderAppoint(){
+  const list=filteredAppoint();
+  const remainSum=list.reduce((a,s)=>a+Math.max(0,(s.total||0)-(s.deposit||0)),0);
+  document.getElementById('ap-count').textContent=fmt(list.length);
+  document.getElementById('ap-remain').textContent=fmt(remainSum)+' ฿';
+  const q=(document.getElementById('ap-search').value||'').toLowerCase().trim();
+  let rows=list;
+  if(q)rows=rows.filter(s=>((s.billNo||'')+' '+(s.cn||'')+' '+custName(s.customerId)+' '+apItemsText(s)+' '+(s.branch||'')).toLowerCase().includes(q));
+  document.getElementById('ap-list').innerHTML=rows.length?
+    '<table><tr><th>วันนัดรับ</th><th>ประเภท</th><th>เลขที่</th><th>ลูกค้า</th><th>สาขา</th><th>รายการ</th><th class="num">ยอดสุทธิ</th><th class="num">คงเหลือ</th><th class="no-print"></th></tr>'+
+    rows.map(s=>{const remain=Math.max(0,(s.total||0)-(s.deposit||0));const isC=s.kind==='claim';return `<tr><td><b>${thDate(s.appointDate)}</b></td><td>${isC?'<span class="badge cat-เคลม">เคลม</span>':'ขาย'}</td><td>${esc(isC?(s.cn||'-'):(s.billNo||'-'))}</td><td>${s.customerId?`<span class="link" onclick="viewCustomer('${s.customerId}')">${esc(custName(s.customerId))}</span>`:'ลูกค้าทั่วไป'}</td><td>${esc(s.branch||'สาขาหลัก')}</td><td>${esc(apItemsText(s)||'-')}</td><td class="num">${fmt(s.total||0)}</td><td class="num"><b>${fmt(remain)}</b></td><td class="no-print"><button class="btn sm ghost" onclick="openBill('${s.id}')">${isC?'ใบเคลม':'บิล'}</button></td></tr>`;}).join('')+'</table>'
+    :`<div class="empty">${q?'ไม่พบรายการที่ค้นหา':'ไม่มีนัดรับในช่วงที่เลือก'}</div>`;
+}
+function appointRows(){
+  const rows=[['วันนัดรับ','ประเภท','เลขที่','ลูกค้า','โทร','สาขา','รายการ','ยอดสุทธิ','มัดจำ','คงเหลือ']];
+  filteredAppoint().forEach(s=>{const c=s.customerId?state.customers.find(x=>x.id===s.customerId):null;const remain=Math.max(0,(s.total||0)-(s.deposit||0));rows.push([s.appointDate,s.kind==='claim'?'เคลม':'ขาย',s.kind==='claim'?(s.cn||''):(s.billNo||''),custName(s.customerId),c?c.phone||'':'',s.branch||'สาขาหลัก',apItemsText(s),s.total||0,s.deposit||0,remain]);});
+  return rows;
+}
+function exportAppointCSV(){download(`นัดรับ-${today()}.csv`,csv(appointRows()),'text/csv;charset=utf-8');}
+function exportAppointXLSX(){downloadXLSX(`นัดรับ-${today()}.xlsx`,appointRows(),'นัดรับ');}
 function renderSummary(){
   const list=filteredSales().sort((a,b)=>b.date<a.date?-1:1);
   const total=list.reduce((a,s)=>a+s.total,0);
@@ -1449,7 +1525,7 @@ function fillBranches(){
     el.innerHTML=list.map(b=>`<option>${esc(b)}</option>`).join('');
     if(list.includes(cur))el.value=cur;
   });
-  ['rp-branch','pf-branch','cf-branch'].forEach(id=>{
+  ['rp-branch','pf-branch','cf-branch','af-branch'].forEach(id=>{
     const rp=document.getElementById(id);if(!rp)return;
     const cur=rp.value;rp.innerHTML='<option value="">ทุกสาขา</option>'+list.map(b=>`<option>${esc(b)}</option>`).join('');if(cur===''||list.includes(cur))rp.value=cur;
   });
@@ -1730,7 +1806,7 @@ document.getElementById('cl-rx-editor').innerHTML=buildRxEditor('cl-rx');
 document.getElementById('sale-date').value=today();
 document.getElementById('cl-date').value=today();
 fillBranches();
-(function initReportDates(){const {from,to}=rangeDates('month');['rp','pf','cf'].forEach(p=>{document.getElementById(p+'-from').value=from;document.getElementById(p+'-to').value=to;});})();
+(function initReportDates(){const {from,to}=rangeDates('month');['rp','pf','cf'].forEach(p=>{document.getElementById(p+'-from').value=from;document.getElementById(p+'-to').value=to;});const td=today();document.getElementById('af-from').value=td;document.getElementById('af-to').value=td;})();
 renderReport();
 fillBrands();fillModels();renderCart();renderDash();initCloud();
 </script>
