@@ -289,23 +289,6 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
 <!-- ===== REPORT ===== -->
 <section id="page-report" class="page">
   <h2>รายงาน</h2>
-  <div class="panel no-print">
-    <div class="pill-row">
-      <button class="pill" onclick="quickRange('today',this)">วันนี้</button>
-      <button class="pill" onclick="quickRange('week',this)">7 วันล่าสุด</button>
-      <button class="pill active" onclick="quickRange('month',this)">เดือนนี้</button>
-      <button class="pill" onclick="quickRange('year',this)">ปีนี้</button>
-      <button class="pill" onclick="quickRange('all',this)">ทั้งหมด</button>
-    </div>
-    <div class="row" style="margin-bottom:0">
-      <div><label>ตั้งแต่วันที่</label><input type="date" id="rp-from" onchange="renderReport()"></div>
-      <div><label>ถึงวันที่</label><input type="date" id="rp-to" onchange="renderReport()"></div>
-      <div><label>สาขา</label><select id="rp-branch" onchange="renderReport()"><option value="">ทุกสาขา</option></select></div>
-      <div style="flex:0;align-self:flex-end;display:flex;gap:8px">
-        <button class="btn ghost" onclick="window.print()">พิมพ์</button>
-      </div>
-    </div>
-  </div>
   <div class="rep-layout">
     <div class="rep-nav no-print">
       <button id="rtab-summary" class="active" onclick="repTab('summary')">ยอดขายรวม</button>
@@ -314,7 +297,25 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
     </div>
     <div>
       <div class="rep-section active" id="rep-summary">
-        <div class="row no-print" style="justify-content:flex-end;margin-bottom:12px"><div style="flex:0"><button class="btn ghost" onclick="exportSalesCSV()">ดาวน์โหลด CSV (รายบิล)</button></div></div>
+        <div class="panel no-print">
+          <div class="pill-row">
+            <button class="pill" onclick="repRange('today',this,'rp-from','rp-to',renderSummary)">วันนี้</button>
+            <button class="pill" onclick="repRange('week',this,'rp-from','rp-to',renderSummary)">7 วันล่าสุด</button>
+            <button class="pill active" onclick="repRange('month',this,'rp-from','rp-to',renderSummary)">เดือนนี้</button>
+            <button class="pill" onclick="repRange('year',this,'rp-from','rp-to',renderSummary)">ปีนี้</button>
+            <button class="pill" onclick="repRange('all',this,'rp-from','rp-to',renderSummary)">ทั้งหมด</button>
+          </div>
+          <div class="row" style="margin-bottom:0">
+            <div><label>ตั้งแต่วันที่</label><input type="date" id="rp-from" onchange="renderSummary()"></div>
+            <div><label>ถึงวันที่</label><input type="date" id="rp-to" onchange="renderSummary()"></div>
+            <div><label>สาขา</label><select id="rp-branch" onchange="renderSummary()"><option value="">ทุกสาขา</option></select></div>
+            <div style="flex:0;align-self:flex-end;display:flex;gap:8px">
+              <button class="btn ghost" onclick="exportSalesXLSX()">Excel</button>
+              <button class="btn ghost" onclick="exportSalesCSV()">CSV</button>
+              <button class="btn ghost" onclick="window.print()">PDF</button>
+            </div>
+          </div>
+        </div>
         <div class="cards">
           <div class="card"><div class="label">ยอดขายรวม</div><div class="value red" id="rp-total">0</div></div>
           <div class="card"><div class="label">จำนวนบิล</div><div class="value" id="rp-bills">0</div></div>
@@ -330,7 +331,25 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
         <div class="panel"><h3 style="margin-top:0">รายการขายในช่วงที่เลือก</h3><div id="rp-list"></div></div>
       </div>
       <div class="rep-section" id="rep-product">
-        <div class="row no-print" style="justify-content:flex-end;margin-bottom:12px"><div style="flex:0"><button class="btn ghost" onclick="exportProductCSV()">ดาวน์โหลด CSV (รายสินค้า)</button></div></div>
+        <div class="panel no-print">
+          <div class="pill-row">
+            <button class="pill" onclick="repRange('today',this,'pf-from','pf-to',renderProduct)">วันนี้</button>
+            <button class="pill" onclick="repRange('week',this,'pf-from','pf-to',renderProduct)">7 วันล่าสุด</button>
+            <button class="pill active" onclick="repRange('month',this,'pf-from','pf-to',renderProduct)">เดือนนี้</button>
+            <button class="pill" onclick="repRange('year',this,'pf-from','pf-to',renderProduct)">ปีนี้</button>
+            <button class="pill" onclick="repRange('all',this,'pf-from','pf-to',renderProduct)">ทั้งหมด</button>
+          </div>
+          <div class="row" style="margin-bottom:0">
+            <div><label>ตั้งแต่วันที่</label><input type="date" id="pf-from" onchange="renderProduct()"></div>
+            <div><label>ถึงวันที่</label><input type="date" id="pf-to" onchange="renderProduct()"></div>
+            <div><label>สาขา</label><select id="pf-branch" onchange="renderProduct()"><option value="">ทุกสาขา</option></select></div>
+            <div style="flex:0;align-self:flex-end;display:flex;gap:8px">
+              <button class="btn ghost" onclick="exportProductXLSX()">Excel</button>
+              <button class="btn ghost" onclick="exportProductCSV()">CSV</button>
+              <button class="btn ghost" onclick="window.print()">PDF</button>
+            </div>
+          </div>
+        </div>
         <div class="cards">
           <div class="card"><div class="label">จำนวนชิ้นที่ขายได้</div><div class="value" id="pr-qty">0</div></div>
           <div class="card"><div class="label">ยอดขายสินค้ารวม</div><div class="value red" id="pr-amt">0</div></div>
@@ -340,13 +359,31 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
         <div class="panel">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <h3 style="margin:0">รายสินค้า (เรียงตามจำนวนที่ขายได้)</h3>
-            <input id="pr-search" placeholder="ค้นหาหมวด / แบรนด์ / รุ่น..." oninput="renderReport()" style="max-width:300px">
+            <input id="pr-search" placeholder="ค้นหาหมวด / แบรนด์ / รุ่น..." oninput="renderProduct()" style="max-width:300px">
           </div>
           <div id="pr-list" style="margin-top:12px"></div>
         </div>
       </div>
       <div class="rep-section" id="rep-claim">
-        <div class="row no-print" style="justify-content:flex-end;margin-bottom:12px"><div style="flex:0"><button class="btn ghost" onclick="exportClaimCSV()">ดาวน์โหลด CSV (เคลม)</button></div></div>
+        <div class="panel no-print">
+          <div class="pill-row">
+            <button class="pill" onclick="repRange('today',this,'cf-from','cf-to',renderClaim)">วันนี้</button>
+            <button class="pill" onclick="repRange('week',this,'cf-from','cf-to',renderClaim)">7 วันล่าสุด</button>
+            <button class="pill active" onclick="repRange('month',this,'cf-from','cf-to',renderClaim)">เดือนนี้</button>
+            <button class="pill" onclick="repRange('year',this,'cf-from','cf-to',renderClaim)">ปีนี้</button>
+            <button class="pill" onclick="repRange('all',this,'cf-from','cf-to',renderClaim)">ทั้งหมด</button>
+          </div>
+          <div class="row" style="margin-bottom:0">
+            <div><label>ตั้งแต่วันที่</label><input type="date" id="cf-from" onchange="renderClaim()"></div>
+            <div><label>ถึงวันที่</label><input type="date" id="cf-to" onchange="renderClaim()"></div>
+            <div><label>สาขา</label><select id="cf-branch" onchange="renderClaim()"><option value="">ทุกสาขา</option></select></div>
+            <div style="flex:0;align-self:flex-end;display:flex;gap:8px">
+              <button class="btn ghost" onclick="exportClaimXLSX()">Excel</button>
+              <button class="btn ghost" onclick="exportClaimCSV()">CSV</button>
+              <button class="btn ghost" onclick="window.print()">PDF</button>
+            </div>
+          </div>
+        </div>
         <div class="cards">
           <div class="card"><div class="label">จำนวนใบเคลม</div><div class="value" id="cr-count">0</div></div>
           <div class="card"><div class="label">เพิ่มเงินรวม</div><div class="value red" id="cr-add">0</div></div>
@@ -357,7 +394,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
         <div class="panel">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <h3 style="margin:0">รายการเคลมในช่วงที่เลือก</h3>
-            <input id="cr-search" placeholder="ค้นหา CN / ลูกค้า / เหตุผล..." oninput="renderReport()" style="max-width:300px">
+            <input id="cr-search" placeholder="ค้นหา CN / ลูกค้า / เหตุผล..." oninput="renderClaim()" style="max-width:300px">
           </div>
           <div id="cr-list" style="margin-top:12px"></div>
         </div>
@@ -373,7 +410,8 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
     <div class="row" style="margin-bottom:0;align-items:flex-end">
       <div style="flex:2"><label>ค้นหา (การกระทำ / รายละเอียด / ผู้ใช้)</label><input id="log-search" placeholder="เช่น ลบบิล, เพิ่มลูกค้า, อีเมล..." oninput="renderLog()"></div>
       <div style="flex:0;display:flex;gap:8px">
-        <button class="btn ghost" onclick="exportLogCSV()">ดาวน์โหลด CSV</button>
+        <button class="btn ghost" onclick="exportLogXLSX()">Excel</button>
+        <button class="btn ghost" onclick="exportLogCSV()">CSV</button>
         <button class="btn ghost" onclick="clearLogs()">ล้างประวัติ</button>
       </div>
     </div>
@@ -470,6 +508,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
             <button class="btn" onclick="backup()">ดาวน์โหลดไฟล์สำรอง (.json)</button>
             <button class="btn ghost" onclick="document.getElementById('restore-file').click()">กู้คืนจากไฟล์สำรอง</button>
             <input type="file" id="restore-file" accept=".json" style="display:none" onchange="restore(this)">
+            <button class="btn ghost" onclick="exportCustXLSX()">ส่งออกลูกค้า (Excel)</button>
             <button class="btn ghost" onclick="exportCustCSV()">ส่งออกลูกค้า (CSV)</button>
           </div>
         </div>
@@ -615,11 +654,13 @@ function clearLogs(){
   ids.forEach(id=>{if(lastPush&&lastPush.logs)delete lastPush.logs[id];});
   state.logs=[];save();renderLog();toast('ล้างประวัติแล้ว');
 }
-function exportLogCSV(){
+function logRows(){
   const rows=[['เวลา','ผู้ใช้','การกระทำ','รายละเอียด']];
   [...(state.logs||[])].sort((a,b)=>b.ts-a.ts).forEach(l=>rows.push([thDateTime(l.ts),l.by||'-',l.action,l.detail||'']));
-  download(`ประวัติการใช้งาน-${today()}.csv`,csv(rows),'text/csv;charset=utf-8');
+  return rows;
 }
+function exportLogCSV(){download(`ประวัติการใช้งาน-${today()}.csv`,csv(logRows()),'text/csv;charset=utf-8');}
+function exportLogXLSX(){downloadXLSX(`ประวัติการใช้งาน-${today()}.xlsx`,logRows(),'ประวัติ');}
 function uid(){return 'id'+Date.now()+Math.floor(Math.random()*999);}
 const fmt=n=>Number(n||0).toLocaleString('th-TH');
 const today=()=>new Date().toISOString().slice(0,10);
@@ -1139,26 +1180,31 @@ function openClaim(id){
 }
 
 // ============ REPORT ============
-function quickRange(mode,btn){
-  document.querySelectorAll('#page-report .pill').forEach(p=>p.classList.remove('active'));
-  if(btn)btn.classList.add('active');
-  const t=new Date(),iso=d=>d.toISOString().slice(0,10);
-  let from,to=today();
+function rangeDates(mode){
+  const t=new Date(),iso=d=>d.toISOString().slice(0,10);let from,to=today();
   if(mode==='today')from=to;
   else if(mode==='week'){const d=new Date(t);d.setDate(d.getDate()-6);from=iso(d);}
   else if(mode==='month')from=to.slice(0,8)+'01';
   else if(mode==='year')from=to.slice(0,5)+'01-01';
   else{from='';to='';}
-  document.getElementById('rp-from').value=from;
-  document.getElementById('rp-to').value=to;
-  renderReport();
+  return {from,to};
 }
-function filteredSales(){
-  const f=document.getElementById('rp-from').value,t=document.getElementById('rp-to').value;
-  const b=document.getElementById('rp-branch').value;
+function repRange(mode,btn,fromId,toId,render){
+  if(btn){btn.parentElement.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));btn.classList.add('active');}
+  const {from,to}=rangeDates(mode);
+  document.getElementById(fromId).value=from;
+  document.getElementById(toId).value=to;
+  render();
+}
+function filteredBy(fromId,toId,branchId){
+  const f=document.getElementById(fromId).value,t=document.getElementById(toId).value,b=document.getElementById(branchId).value;
   return state.sales.filter(s=>(!f||s.date>=f)&&(!t||s.date<=t)&&(!b||(s.branch||'สาขาหลัก')===b));
 }
-function renderReport(){
+function filteredSales(){return filteredBy('rp-from','rp-to','rp-branch');}
+function renderReport(){renderSummary();renderProduct();renderClaim();}
+function renderProduct(){renderProductReport(filteredBy('pf-from','pf-to','pf-branch').sort((a,b)=>b.date<a.date?-1:1));}
+function renderClaim(){renderClaimReport(filteredBy('cf-from','cf-to','cf-branch').sort((a,b)=>b.date<a.date?-1:1));}
+function renderSummary(){
   const list=filteredSales().sort((a,b)=>b.date<a.date?-1:1);
   const total=list.reduce((a,s)=>a+s.total,0);
   const items=list.reduce((a,s)=>a+s.items.reduce((x,i)=>x+i.qty,0),0);
@@ -1188,8 +1234,6 @@ function renderReport(){
     top.map((e,i)=>`<tr><td>${i+1}</td><td><span class="link" onclick="viewCustomer('${e[0]}')">${esc(custName(e[0]))}</span></td><td class="num">${e[1].n}</td><td class="num"><b>${fmt(e[1].amt)}</b></td></tr>`).join('')+'</table>'
     :'<div class="empty">ไม่มีข้อมูลลูกค้าสมาชิกในช่วงนี้</div>';
   document.getElementById('rp-list').innerHTML=list.length?salesTable(list):'<div class="empty">ไม่มีการขายในช่วงที่เลือก</div>';
-  renderProductReport(list);
-  renderClaimReport(list);
 }
 function claimWarrantyStr(s){const a=[];if(s.warranty&&s.warranty.lens)a.push('เลนส์');if(s.warranty&&s.warranty.frame)a.push('กรอบ');return a.join('+');}
 function renderClaimReport(list){
@@ -1213,12 +1257,14 @@ function renderClaimReport(list){
     rows.map(s=>`<tr><td>${thDate(s.date)}</td><td>${esc(s.cn||'-')}</td><td>${s.customerId?`<span class="link" onclick="viewCustomer('${s.customerId}')">${esc(custName(s.customerId))}</span>`:'ลูกค้าทั่วไป'}</td><td>${esc(s.branch||'สาขาหลัก')}</td><td>${esc(claimTypeStr(s)||'-')}${claimWarrantyStr(s)?`<div class="muted">ในประกัน: ${esc(claimWarrantyStr(s))}</div>`:''}</td><td>${esc(s.reason||'-')}</td><td class="num"><b>${fmt(s.addAmount!=null?s.addAmount:(s.total||0))}</b>${s.deposit?`<div class="muted">มัดจำ ${fmt(s.deposit)}</div>`:''}</td><td class="no-print"><button class="btn sm ghost" onclick="openClaim('${s.id}')">ใบเคลม</button></td></tr>`).join('')+'</table>'
     :`<div class="empty">${q?'ไม่พบใบเคลมที่ค้นหา':'ไม่มีใบเคลมในช่วงที่เลือก'}</div>`;
 }
-function exportClaimCSV(){
-  const claims=filteredSales().filter(s=>s.kind==='claim').sort((a,b)=>b.date<a.date?-1:1);
+function claimRows(){
+  const claims=filteredBy('cf-from','cf-to','cf-branch').filter(s=>s.kind==='claim').sort((a,b)=>b.date<a.date?-1:1);
   const rows=[['วันที่','CN','ลูกค้า','สาขา','ประเภท','เหตุผล','เปลี่ยนรุ่น/กรอบ','เปลี่ยนค่าสายตา','ในประกัน','เพิ่มเงิน','มัดจำ','คงเหลือ','นัดรับ','หมายเหตุ']];
   claims.forEach(s=>{const add=(s.addAmount!=null?s.addAmount:(s.total||0));rows.push([s.date,s.cn||'',custName(s.customerId),s.branch||'สาขาหลัก',claimTypeStr(s),s.reason||'',s.changeModel||'',s.changeRx||'',claimWarrantyStr(s),add,s.deposit||0,Math.max(0,add-(s.deposit||0)),s.appointDate||'',s.note||'']);});
-  download(`รายงานเคลม-${today()}.csv`,csv(rows),'text/csv;charset=utf-8');
+  return rows;
 }
+function exportClaimCSV(){download(`รายงานเคลม-${today()}.csv`,csv(claimRows()),'text/csv;charset=utf-8');}
+function exportClaimXLSX(){downloadXLSX(`รายงานเคลม-${today()}.xlsx`,claimRows(),'เคลม');}
 function repTab(name){
   document.querySelectorAll('.rep-section').forEach(s=>s.classList.remove('active'));
   const sec=document.getElementById('rep-'+name);if(sec)sec.classList.add('active');
@@ -1258,12 +1304,14 @@ function renderProductReport(list){
     rows.map(p=>`<tr><td><span class="badge cat-${esc(p.cat)}">${esc(p.cat)}</span></td><td>${esc(p.brand)}</td><td>${esc(p.name)}</td><td class="num"><b>${fmt(p.qty)}</b></td><td class="num">${fmt(p.amt)}</td></tr>`).join('')+'</table>'
     :`<div class="empty">${q?'ไม่พบสินค้าที่ค้นหา':'ไม่มีการขายสินค้าในช่วงที่เลือก'}</div>`;
 }
-function exportProductCSV(){
-  const {byProd}=productAgg(filteredSales());
+function productRows(){
+  const {byProd}=productAgg(filteredBy('pf-from','pf-to','pf-branch'));
   const rows=[['หมวด','แบรนด์','รุ่น/สินค้า','จำนวนชิ้น','ยอดขาย']];
   Object.values(byProd).sort((a,b)=>b.qty-a.qty).forEach(p=>rows.push([p.cat,p.brand,p.name,p.qty,p.amt]));
-  download(`รายงานสินค้า-${today()}.csv`,csv(rows),'text/csv;charset=utf-8');
+  return rows;
 }
+function exportProductCSV(){download(`รายงานสินค้า-${today()}.csv`,csv(productRows()),'text/csv;charset=utf-8');}
+function exportProductXLSX(){downloadXLSX(`รายงานสินค้า-${today()}.xlsx`,productRows(),'สินค้า');}
 function barTable(obj,total){
   const e=Object.entries(obj).sort((a,b)=>b[1]-a[1]);
   if(!e.length)return '<div class="empty">ไม่มีข้อมูล</div>';
@@ -1398,8 +1446,10 @@ function fillBranches(){
     el.innerHTML=list.map(b=>`<option>${esc(b)}</option>`).join('');
     if(list.includes(cur))el.value=cur;
   });
-  const rp=document.getElementById('rp-branch');
-  if(rp){const cur=rp.value;rp.innerHTML='<option value="">ทุกสาขา</option>'+list.map(b=>`<option>${esc(b)}</option>`).join('');if(cur===''||list.includes(cur))rp.value=cur;}
+  ['rp-branch','pf-branch','cf-branch'].forEach(id=>{
+    const rp=document.getElementById(id);if(!rp)return;
+    const cur=rp.value;rp.innerHTML='<option value="">ทุกสาขา</option>'+list.map(b=>`<option>${esc(b)}</option>`).join('');if(cur===''||list.includes(cur))rp.value=cur;
+  });
 }
 function renderBranches(){
   const el=document.getElementById('branch-chips');if(!el)return;
@@ -1448,20 +1498,30 @@ function restore(inp){
   r.readAsText(f);inp.value='';
 }
 function csv(rows){return '﻿'+rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');}
-function exportSalesCSV(){
-  const rows=[['วันที่','ลูกค้า','หมวด','แบรนด์','สินค้า','จำนวน','ราคา/ชิ้น','รวม','หมายเหตุ']];
-  filteredSales().forEach(s=>{
-    if(s.kind==='claim'){rows.push([s.date,custName(s.customerId),'เคลม'+(s.cn?' '+s.cn:''),'',claimTypeStr(s)+(s.reason?' - '+s.reason:''),'','',s.total,s.note]);}
-    else s.items.forEach(i=>rows.push([s.date,custName(s.customerId),i.category,i.brand,i.name,i.qty,i.price,lineNet(i),s.note]));
-  });
-  download(`ยอดขาย-${today()}.csv`,csv(rows),'text/csv;charset=utf-8');
+function ensureXLSX(){return window.XLSX?Promise.resolve():loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');}
+async function downloadXLSX(name,rows,sheet){
+  try{await ensureXLSX();const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,(sheet||'Sheet1').slice(0,31));XLSX.writeFile(wb,name);}
+  catch(e){console.error('xlsx',e);alert('ดาวน์โหลด Excel ไม่สำเร็จ (ตรวจอินเทอร์เน็ต)');}
 }
-function exportCustCSV(){
+// ---- row builders (shared by CSV + Excel) ----
+function salesRows(){
+  const rows=[['วันที่','ลูกค้า','สาขา','หมวด','แบรนด์','สินค้า','จำนวน','ราคา/ชิ้น','รวม','หมายเหตุ']];
+  filteredSales().forEach(s=>{
+    if(s.kind==='claim'){rows.push([s.date,custName(s.customerId),s.branch||'สาขาหลัก','เคลม'+(s.cn?' '+s.cn:''),'',claimTypeStr(s)+(s.reason?' - '+s.reason:''),'','',s.total,s.note]);}
+    else s.items.forEach(i=>rows.push([s.date,custName(s.customerId),s.branch||'สาขาหลัก',i.category,i.brand,i.name,i.qty,i.price,lineNet(i),s.note]));
+  });
+  return rows;
+}
+function custRows(){
   const rows=[['HN','ชื่อ','เบอร์โทร','วันเกิด','อายุ','ที่อยู่','R-SPH','R-CYL','R-AXIS','R-ADD','R-PRISM','R-BASE','L-SPH','L-CYL','L-AXIS','L-ADD','L-PRISM','L-BASE','PD-FAR-R','PD-FAR-L','PD-NEAR-R','PD-NEAR-L','PD','SH','ประเภทใบสั่ง','หมายเหตุ']];
   state.customers.forEach(c=>{const r=c.rx?.r||{},l=c.rx?.l||{},pf=c.rx?.pdFar||{},pn=c.rx?.pdNear||{};
     rows.push([c.code,c.name,c.phone,c.birth,c.age,c.addr,r.sph,r.cyl,r.axis,r.add,r.prism,r.base,l.sph,l.cyl,l.axis,l.add,l.prism,l.base,pf.r,pf.l,pn.r,pn.l,c.rx?.pd,c.rx?.sh,rxTypeStr(c.rx),c.note]);});
-  download(`ลูกค้า-${today()}.csv`,csv(rows),'text/csv;charset=utf-8');
+  return rows;
 }
+function exportSalesCSV(){download(`ยอดขาย-${today()}.csv`,csv(salesRows()),'text/csv;charset=utf-8');}
+function exportSalesXLSX(){downloadXLSX(`ยอดขาย-${today()}.xlsx`,salesRows(),'ยอดขาย');}
+function exportCustCSV(){download(`ลูกค้า-${today()}.csv`,csv(custRows()),'text/csv;charset=utf-8');}
+function exportCustXLSX(){downloadXLSX(`ลูกค้า-${today()}.xlsx`,custRows(),'ลูกค้า');}
 // ---- import customers from CSV ----
 function parseCSV(text){
   text=text.replace(/^﻿/,'');
@@ -1667,7 +1727,8 @@ document.getElementById('cl-rx-editor').innerHTML=buildRxEditor('cl-rx');
 document.getElementById('sale-date').value=today();
 document.getElementById('cl-date').value=today();
 fillBranches();
-quickRange('month',document.querySelector('#page-report .pill.active'));
+(function initReportDates(){const {from,to}=rangeDates('month');['rp','pf','cf'].forEach(p=>{document.getElementById(p+'-from').value=from;document.getElementById(p+'-to').value=to;});})();
+renderReport();
 fillBrands();fillModels();renderCart();renderDash();initCloud();
 </script>
 </body>
