@@ -137,6 +137,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
     <button data-page="sale" onclick="go('sale')">ขายสินค้า</button>
     <button data-page="claim" onclick="go('claim')">เคลม</button>
     <button data-page="report" onclick="go('report')">รายงาน</button>
+    <button data-page="log" onclick="go('log')">ประวัติ</button>
     <button data-page="setting" onclick="go('setting')">ตั้งค่า</button>
   </nav>
 </header>
@@ -191,14 +192,14 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
     <h3>รายการสินค้า</h3>
     <div class="row">
       <div><label>หมวดสินค้า</label>
-        <select id="it-cat">
+        <select id="it-cat" onchange="fillBrands();fillModels()">
           <option>แว่นสายตา</option><option>แว่นกันแดด</option>
           <option>คอนแทคเลนส์</option><option>อะไหล่แว่น</option>
           <option>เลนส์</option><option>อื่นๆ</option>
         </select>
       </div>
-      <div><label>แบรนด์</label><input id="it-brand" list="brand-list" placeholder="เช่น Rayban"><datalist id="brand-list"></datalist></div>
-      <div style="flex:1.5"><label>ชื่อสินค้า/รุ่น</label><input id="it-name" placeholder="เช่น RB3025 Aviator"></div>
+      <div><label>แบรนด์</label><input id="it-brand" list="brand-list" placeholder="เช่น Rayban" oninput="fillModels()" onchange="fillModels()"><datalist id="brand-list"></datalist></div>
+      <div style="flex:1.5"><label>ชื่อสินค้า/รุ่น</label><input id="it-name" list="model-list" placeholder="เช่น RB3025 Aviator"><datalist id="model-list"></datalist></div>
       <div style="max-width:90px"><label>จำนวน</label><input type="number" id="it-qty" value="1" min="1"></div>
       <div style="max-width:130px"><label>ราคา/ชิ้น (บาท)</label><input type="number" id="it-price" min="0" placeholder="0"></div>
       <div style="max-width:140px"><label>ส่วนลดรายการ</label><div style="display:flex;gap:4px"><input type="number" id="it-disc" min="0" placeholder="0" style="width:100%;min-width:0"><select id="it-disc-type" style="width:auto"><option value="thb">฿</option><option value="pct">%</option></select></div></div>
@@ -313,6 +314,21 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
   <div class="panel"><h3 style="margin-top:0">รายการขายในช่วงที่เลือก</h3><div id="rp-list"></div></div>
 </section>
 
+<!-- ===== LOG ===== -->
+<section id="page-log" class="page">
+  <h2>ประวัติการดำเนินการ</h2>
+  <div class="panel">
+    <div class="row" style="margin-bottom:0;align-items:flex-end">
+      <div style="flex:2"><label>ค้นหา (การกระทำ / รายละเอียด / ผู้ใช้)</label><input id="log-search" placeholder="เช่น ลบบิล, เพิ่มลูกค้า, อีเมล..." oninput="renderLog()"></div>
+      <div style="flex:0;display:flex;gap:8px">
+        <button class="btn ghost" onclick="exportLogCSV()">ดาวน์โหลด CSV</button>
+        <button class="btn ghost" onclick="clearLogs()">ล้างประวัติ</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel"><div id="log-list"></div></div>
+</section>
+
 <!-- ===== SETTINGS ===== -->
 <section id="page-setting" class="page">
   <h2>ตั้งค่า & สำรองข้อมูล</h2>
@@ -341,8 +357,24 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
     <div id="branch-chips"></div>
   </div>
   <div class="panel">
-    <h3 style="margin-top:0">แบรนด์สินค้า</h3>
-    <p class="muted">แบรนด์ที่เพิ่มไว้จะขึ้นเป็นตัวเลือกตอนบันทึกการขาย</p>
+    <h3 style="margin-top:0">แบรนด์ &amp; รุ่น (แยกตามหมวดสินค้า)</h3>
+    <p class="muted">เลือกหมวด → เพิ่มแบรนด์ในหมวดนั้น → เพิ่มรุ่น (ซัพเซท) ของแต่ละแบรนด์ ทั้งหมดจะขึ้นเป็นตัวเลือกตอนบันทึกการขาย</p>
+    <div class="row" style="margin-top:10px">
+      <div style="max-width:200px"><label>หมวดสินค้า</label>
+        <select id="cat-sel" onchange="renderCatalog()">
+          <option>แว่นสายตา</option><option>แว่นกันแดด</option>
+          <option>คอนแทคเลนส์</option><option>อะไหล่แว่น</option>
+          <option>เลนส์</option><option>อื่นๆ</option>
+        </select>
+      </div>
+      <div><label>เพิ่มแบรนด์ในหมวดนี้</label><input id="new-cat-brand" placeholder="เช่น Rayban" onkeydown="if(event.key==='Enter')addCatBrand()"></div>
+      <div style="flex:0;align-self:flex-end"><button class="btn" onclick="addCatBrand()">เพิ่มแบรนด์</button></div>
+    </div>
+    <div id="catalog-box"></div>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">แบรนด์รวม (ทั่วไป)</h3>
+    <p class="muted">แบรนด์ที่ไม่ได้แยกหมวด — ยังขึ้นเป็นตัวเลือกแบรนด์ตอนขายเช่นกัน</p>
     <div class="row" style="margin-top:10px">
       <div><input id="new-brand" placeholder="ชื่อแบรนด์ใหม่ เช่น Gucci"></div>
       <div style="flex:0"><button class="btn" onclick="addBrand()">เพิ่มแบรนด์</button></div>
@@ -476,10 +508,43 @@ function load(){
   if(!d.shop)d.shop={...SHOP_DEFAULT};
   if(!d.billSeq)d.billSeq=0;
   if(!Array.isArray(d.branches)||!d.branches.length)d.branches=['สาขาหลัก','สาขาโรงพยาบาลกรุงเทพ'];
+  if(!Array.isArray(d.logs))d.logs=[];
+  if(!d.catalog||typeof d.catalog!=='object'||Array.isArray(d.catalog))d.catalog={};
   return d;
 }
 let state=load();
 function save(){localStorage.setItem(KEY,JSON.stringify(state));schedulePush();}
+// ===== activity log =====
+function addLog(action,detail){
+  state.logs=state.logs||[];
+  state.logs.push({id:uid(),ts:Date.now(),by:(typeof fbUser!=='undefined'&&fbUser&&fbUser.email)||'-',action,detail:detail||''});
+  if(state.logs.length>3000)state.logs=state.logs.slice(-3000);
+  save();
+  if(typeof curPage!=='undefined'&&curPage==='log')renderLog();
+}
+function thDateTime(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,'0');return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()+543} ${p(d.getHours())}:${p(d.getMinutes())}`;}
+function renderLog(){
+  const q=(document.getElementById('log-search').value||'').toLowerCase().trim();
+  let list=[...(state.logs||[])].sort((a,b)=>b.ts-a.ts);
+  if(q)list=list.filter(l=>((l.action||'')+' '+(l.detail||'')+' '+(l.by||'')).toLowerCase().includes(q));
+  const box=document.getElementById('log-list');
+  if(!list.length){box.innerHTML='<div class="empty">'+(q?'ไม่พบประวัติที่ค้นหา':'ยังไม่มีประวัติการดำเนินการ')+'</div>';return;}
+  let h='<table><tr><th>เวลา</th><th>ผู้ใช้</th><th>การกระทำ</th><th>รายละเอียด</th></tr>';
+  list.slice(0,1000).forEach(l=>{h+=`<tr><td style="white-space:nowrap">${esc(thDateTime(l.ts))}</td><td>${esc(l.by||'-')}</td><td><b>${esc(l.action)}</b></td><td>${esc(l.detail||'')}</td></tr>`;});
+  box.innerHTML=h+'</table>'+(list.length>1000?`<p class="muted" style="margin-top:8px">แสดง 1,000 รายการล่าสุด จากทั้งหมด ${fmt(list.length)} รายการ</p>`:'');
+}
+function clearLogs(){
+  if(!confirm('ล้างประวัติการดำเนินการทั้งหมด?\n(ลบทั้งในเครื่องนี้และบนคลาวด์ — เครื่องอื่นให้รีเฟรชหน้าเว็บ)'))return;
+  const ids=(state.logs||[]).map(l=>l.id);
+  if(typeof fbUser!=='undefined'&&fbUser&&fbDB){(async()=>{try{for(let i=0;i<ids.length;i+=400){const b=fbDB.batch();ids.slice(i,i+400).forEach(id=>b.delete(col('logs').doc(id)));await b.commit();}}catch(e){console.error('clear logs',e);}})();}
+  ids.forEach(id=>{if(lastPush&&lastPush.logs)delete lastPush.logs[id];});
+  state.logs=[];save();renderLog();toast('ล้างประวัติแล้ว');
+}
+function exportLogCSV(){
+  const rows=[['เวลา','ผู้ใช้','การกระทำ','รายละเอียด']];
+  [...(state.logs||[])].sort((a,b)=>b.ts-a.ts).forEach(l=>rows.push([thDateTime(l.ts),l.by||'-',l.action,l.detail||'']));
+  download(`ประวัติการใช้งาน-${today()}.csv`,csv(rows),'text/csv;charset=utf-8');
+}
 function uid(){return 'id'+Date.now()+Math.floor(Math.random()*999);}
 const fmt=n=>Number(n||0).toLocaleString('th-TH');
 const today=()=>new Date().toISOString().slice(0,10);
@@ -496,6 +561,7 @@ function go(p){
   if(p==='dash')renderDash();
   if(p==='cust')renderCustomers();
   if(p==='report')renderReport();
+  if(p==='log')renderLog();
   if(p==='setting')renderBrands();
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -525,7 +591,7 @@ function salesTable(list){
   });
   return h+'</table>';
 }
-function delSale(id){if(!confirm('ลบบิลนี้?'))return;state.sales=state.sales.filter(s=>s.id!==id);save();renderDash();renderReport();toast('ลบบิลแล้ว');}
+function delSale(id){if(!confirm('ลบบิลนี้?'))return;const s=state.sales.find(x=>x.id===id);state.sales=state.sales.filter(s=>s.id!==id);addLog(s&&s.kind==='claim'?'ลบใบเคลม':'ลบบิลขาย',s?((s.billNo||s.cn||'')+' · '+fmt(s.total)+' บาท · '+(s.branch||'สาขาหลัก')):id);save();renderDash();renderReport();toast('ลบบิลแล้ว');}
 function editSaleBranch(id){
   const s=state.sales.find(x=>x.id===id);if(!s)return;
   const list=state.branches||[];
@@ -540,7 +606,9 @@ function editSaleBranch(id){
 function saveBranchEdit(){
   const id=document.getElementById('eb-id').value;
   const s=state.sales.find(x=>x.id===id);if(!s)return;
+  const oldB=s.branch||'สาขาหลัก';
   s.branch=document.getElementById('eb-branch').value;
+  addLog('แก้สาขาของบิล',(s.billNo||s.cn||'')+' : '+oldB+' → '+s.branch);
   save();closeModal('branch-modal');renderDash();renderReport();toast('แก้ไขสาขาของบิลแล้ว');
 }
 
@@ -594,13 +662,17 @@ function saveCustomer(){
   let newId=null;
   if(id){Object.assign(state.customers.find(x=>x.id===id),data);}
   else{newId=uid();state.customers.push({id:newId,createdAt:Date.now(),...data});}
+  addLog(id?'แก้ไขลูกค้า':'เพิ่มลูกค้า','HN '+code+' · '+name);
   save();closeModal('cust-modal');renderCustomers();renderDash();toast('บันทึกข้อมูลลูกค้าแล้ว');
   if(saleCtx&&newId){pickCust(newId);saleCtx=false;go('sale');}
   if(claimCtx&&newId){pickClaimCust(newId);claimCtx=false;go('claim');}
 }
 function delCustomer(id){
   if(!confirm('ลบลูกค้ารายนี้? (ประวัติการขายจะยังอยู่แต่แสดงเป็นลูกค้าทั่วไป)'))return;
-  state.customers=state.customers.filter(c=>c.id!==id);save();renderCustomers();toast('ลบลูกค้าแล้ว');
+  const c=state.customers.find(x=>x.id===id);
+  state.customers=state.customers.filter(c=>c.id!==id);
+  addLog('ลบลูกค้า',c?('HN '+c.code+' · '+c.name):id);
+  save();renderCustomers();toast('ลบลูกค้าแล้ว');
 }
 function viewCustomer(id){
   const c=state.customers.find(x=>x.id===id);if(!c)return;
@@ -713,6 +785,7 @@ function finishClaim(cid,rx){
     note:document.getElementById('cl-note').value.trim(),createdAt:Date.now()};
   state.sales.push(claim);
   if(cid&&rx){const c=state.customers.find(x=>x.id===cid);if(c)c.rx=rx;}
+  addLog('บันทึกใบเคลม',cn+' · '+(claimTypeStr(claim)||'-')+' · เพิ่มเงิน '+fmt(add)+' บาท · '+claim.branch+(cid?' · '+custName(cid):''));
   save();resetClaimForm();renderDash();toast('บันทึกใบเคลมเรียบร้อย ✓');openClaim(claim.id);
 }
 function resetClaimForm(){
@@ -825,8 +898,11 @@ function addItem(){
   const brand=document.getElementById('it-brand').value.trim();
   const disc=+document.getElementById('it-disc').value||0;
   const discType=document.getElementById('it-disc-type').value;
-  cart.push({category:document.getElementById('it-cat').value,brand,name:name||'-',qty,price,disc,discType});
-  if(brand&&!state.brands.some(b=>b.toLowerCase()===brand.toLowerCase())){state.brands.push(brand);save();fillBrands();}
+  const cat=document.getElementById('it-cat').value;
+  cart.push({category:cat,brand,name:name||'-',qty,price,disc,discType});
+  if(brand&&!state.brands.some(b=>b.toLowerCase()===brand.toLowerCase()))state.brands.push(brand);
+  if(brand){catEnsure(cat,brand);if(name&&name!=='-'&&!state.catalog[cat][brand].includes(name))state.catalog[cat][brand].push(name);}
+  if(brand)save();fillBrands();fillModels();
   document.getElementById('it-name').value='';document.getElementById('it-price').value='';
   document.getElementById('it-qty').value=1;document.getElementById('it-brand').value='';
   document.getElementById('it-disc').value='';document.getElementById('it-disc-type').value='thb';
@@ -895,6 +971,7 @@ function finishSale(date,cid){
     note:document.getElementById('sale-note').value.trim(),createdAt:Date.now()};
   state.sales.push(sale);
   if(cid&&srx){const c=state.customers.find(x=>x.id===cid);if(c)c.rx=srx;}
+  addLog('บันทึกการขาย',sale.billNo+' · '+fmt(sale.total)+' บาท · '+sale.branch+(cid?' · '+custName(cid):' · ลูกค้าทั่วไป'));
   save();cart=[];renderCart();
   document.getElementById('sale-note').value='';document.getElementById('sale-cust-input').value='';
   document.getElementById('sale-cust-id').value='';document.getElementById('sale-deposit').value='';
@@ -1049,12 +1126,67 @@ function barTable(obj,total){
 }
 
 // ============ BRANDS / SETTINGS ============
+function catBrands(cat){return (state.catalog&&state.catalog[cat])?Object.keys(state.catalog[cat]):[];}
 function fillBrands(){
-  document.getElementById('brand-list').innerHTML=state.brands.map(b=>`<option value="${esc(b)}">`).join('');
+  const cat=(document.getElementById('it-cat')||{}).value||'';
+  const set=new Set([...catBrands(cat),...(state.brands||[])]);
+  document.getElementById('brand-list').innerHTML=[...set].map(b=>`<option value="${esc(b)}">`).join('');
+}
+function fillModels(){
+  const cat=(document.getElementById('it-cat')||{}).value||'';
+  const brand=(document.getElementById('it-brand')||{}).value.trim()||'';
+  const models=(state.catalog&&state.catalog[cat]&&state.catalog[cat][brand])||[];
+  const el=document.getElementById('model-list');if(el)el.innerHTML=models.map(m=>`<option value="${esc(m)}">`).join('');
+}
+function catEnsure(cat,brand){state.catalog=state.catalog||{};if(!state.catalog[cat])state.catalog[cat]={};if(brand&&!state.catalog[cat][brand])state.catalog[cat][brand]=[];}
+function renderCatalog(){
+  const box=document.getElementById('catalog-box');if(!box)return;
+  const cat=document.getElementById('cat-sel').value;
+  const brands=(state.catalog&&state.catalog[cat])||{};
+  const names=Object.keys(brands);
+  if(!names.length){box.innerHTML='<div class="empty">ยังไม่มีแบรนด์ในหมวดนี้ — เพิ่มด้านบน</div>';return;}
+  box.innerHTML=names.map((bn,bi)=>{
+    const models=brands[bn]||[];
+    const chips=models.length?models.map((m,mi)=>`<span class="brand-chip">${esc(m)} <b onclick="delCatModel(${bi},${mi})">✕</b></span>`).join(' '):'<span class="muted">ยังไม่มีรุ่น</span>';
+    return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>${esc(bn)}</b> <button class="btn sm ghost" onclick="delCatBrand(${bi})">ลบแบรนด์</button></div>
+      <div>${chips} <button class="btn sm" onclick="addCatModel(${bi})">+ เพิ่มรุ่น</button></div>
+    </div>`;
+  }).join('');
+}
+function addCatBrand(){
+  const cat=document.getElementById('cat-sel').value;
+  const v=document.getElementById('new-cat-brand').value.trim();if(!v)return;
+  if((state.catalog[cat]||{})[v]){alert('มีแบรนด์นี้ในหมวดแล้ว');return;}
+  catEnsure(cat,v);
+  document.getElementById('new-cat-brand').value='';
+  addLog('เพิ่มแบรนด์ในหมวด',cat+' · '+v);save();renderCatalog();fillBrands();
+}
+function delCatBrand(bi){
+  const cat=document.getElementById('cat-sel').value;
+  const names=Object.keys(state.catalog[cat]||{});const bn=names[bi];if(!bn)return;
+  if(!confirm('ลบแบรนด์ "'+bn+'" และรุ่นทั้งหมด (หมวด '+cat+')?'))return;
+  delete state.catalog[cat][bn];
+  addLog('ลบแบรนด์ในหมวด',cat+' · '+bn);save();renderCatalog();fillBrands();fillModels();
+}
+function addCatModel(bi){
+  const cat=document.getElementById('cat-sel').value;
+  const names=Object.keys(state.catalog[cat]||{});const bn=names[bi];if(!bn)return;
+  const v=prompt('เพิ่มรุ่นของ "'+bn+'"','');if(v===null)return;const nv=v.trim();if(!nv)return;
+  if(state.catalog[cat][bn].includes(nv)){alert('มีรุ่นนี้แล้ว');return;}
+  state.catalog[cat][bn].push(nv);
+  addLog('เพิ่มรุ่น',cat+' · '+bn+' · '+nv);save();renderCatalog();fillModels();
+}
+function delCatModel(bi,mi){
+  const cat=document.getElementById('cat-sel').value;
+  const names=Object.keys(state.catalog[cat]||{});const bn=names[bi];if(!bn)return;
+  const m=state.catalog[cat][bn][mi];
+  state.catalog[cat][bn].splice(mi,1);
+  addLog('ลบรุ่น',cat+' · '+bn+' · '+(m||''));save();renderCatalog();fillModels();
 }
 function renderBrands(){
   document.getElementById('brand-chips').innerHTML=state.brands.map((b,i)=>`<span class="brand-chip">${esc(b)} <b onclick="delBrand(${i})">✕</b></span>`).join('');
-  renderBranches();
+  renderBranches();renderCatalog();
   ['addr1','addr2','fb','line','tel'].forEach(k=>document.getElementById('shop-'+k).value=state.shop[k]||'');
   updateSyncUI();
 }
@@ -1089,6 +1221,7 @@ function addBranch(){
   state.branches=state.branches||[];
   if(state.branches.includes(v)){alert('มีสาขานี้อยู่แล้ว');return;}
   state.branches.push(v);
+  addLog('เพิ่มสาขา',v);
   document.getElementById('new-branch').value='';save();renderBranches();fillBranches();toast('เพิ่มสาขาแล้ว');
 }
 function renameBranch(i){
@@ -1098,6 +1231,7 @@ function renameBranch(i){
   if(state.branches.some((b,x)=>x!==i&&b===nv)){alert('มีสาขาชื่อนี้แล้ว');return;}
   state.branches[i]=nv;
   state.sales.forEach(s=>{if((s.branch||'สาขาหลัก')===old)s.branch=nv;});
+  addLog('แก้ชื่อสาขา',old+' → '+nv);
   save();renderBranches();fillBranches();renderDash();toast('แก้ชื่อสาขาแล้ว (อัปเดตรายการเดิมให้ด้วย)');
 }
 function removeBranch(i){
@@ -1106,7 +1240,7 @@ function removeBranch(i){
   const name=list[i];
   if(state.sales.some(s=>(s.branch||'สาขาหลัก')===name)){alert('สาขา "'+name+'" มีรายการขาย/เคลมอยู่ ลบไม่ได้\nถ้าต้องการ ให้แก้ชื่อสาขาแทน');return;}
   if(!confirm('ลบสาขา "'+name+'" ?'))return;
-  state.branches.splice(i,1);save();renderBranches();fillBranches();toast('ลบสาขาแล้ว');
+  state.branches.splice(i,1);addLog('ลบสาขา',name);save();renderBranches();fillBranches();toast('ลบสาขาแล้ว');
 }
 
 // ============ BACKUP / EXPORT ============
@@ -1120,7 +1254,7 @@ function restore(inp){
   const f=inp.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.customers||!d.sales)throw 0;
-    if(confirm(`กู้คืนข้อมูล: ลูกค้า ${d.customers.length} ราย, บิล ${d.sales.length} บิล\nข้อมูลปัจจุบันจะถูกแทนที่ ยืนยัน?`)){state=d;save();location.reload();}
+    if(confirm(`กู้คืนข้อมูล: ลูกค้า ${d.customers.length} ราย, บิล ${d.sales.length} บิล\nข้อมูลปัจจุบันจะถูกแทนที่ ยืนยัน?`)){state=d;state.logs=state.logs||[];addLog('กู้คืนข้อมูลจากไฟล์สำรอง','ลูกค้า '+d.customers.length+' · บิล '+d.sales.length);location.reload();}
   }catch(e){alert('ไฟล์ไม่ถูกต้อง');}};
   r.readAsText(f);inp.value='';
 }
@@ -1179,6 +1313,7 @@ function importCust(inp){
         createdAt:Date.now()});
       added++;
     });
+    if(added)addLog('นำเข้าลูกค้า (CSV)','เพิ่ม '+added+' ราย'+(skipped?' · ข้ามซ้ำ '+skipped:''));
     save();renderCustomers();
     alert(`นำเข้าแล้ว ${added} ราย${skipped?` (ข้าม ${skipped} รายที่ซ้ำ)`:''}`);
   };
@@ -1188,7 +1323,7 @@ function importCust(inp){
 // ============ CLOUD SYNC (Firebase, optional) ============
 const FBKEY='kmoptical_fbcfg';
 const FB_EMBED={apiKey:"AIzaSyDDBZ8n7xpp5X0AkgTzv1ECPFF6UWHkbY4",authDomain:"wantakhunmor-afe6d.firebaseapp.com",projectId:"wantakhunmor-afe6d",storageBucket:"wantakhunmor-afe6d.firebasestorage.app",messagingSenderId:"297035862487",appId:"1:297035862487:web:ed9de90fb81f43e4e6fb92"};
-let fbUser=null,fbDB=null,pushTimer=null,lastPush={cust:{},sales:{},meta:''},firstSnap={c:true,s:true};
+let fbUser=null,fbDB=null,pushTimer=null,lastPush={cust:{},sales:{},logs:{},meta:''},firstSnap={c:true,s:true};
 function fbCfg(){try{const c=JSON.parse(localStorage.getItem(FBKEY));if(c)return c;}catch(e){}return FB_EMBED;}
 function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
 async function initCloud(){
@@ -1241,36 +1376,70 @@ function updateSyncUI(){
 }
 function col(name){return fbDB.collection('shops').doc(fbUser.uid).collection(name);}
 function metaDoc(){return fbDB.collection('shops').doc(fbUser.uid).collection('meta').doc('main');}
+// Two-way merge: cloud is authoritative EXCEPT for local changes not yet pushed
+// (prevMap = what we last knew was on the cloud). Preserves local deletes/edits/adds.
+function mergeCloud(localArr,docs,prevMap){
+  const cloud=docs.map(d=>d.data());
+  const cloudMap={},localMap={};
+  cloud.forEach(x=>cloudMap[x.id]=JSON.stringify(x));
+  (localArr||[]).forEach(x=>localMap[x.id]=JSON.stringify(x));
+  const merged=[],handled=new Set();
+  cloud.forEach(x=>{
+    const id=x.id,l=localMap[id],wasPushed=prevMap[id]!==undefined;
+    if(l===undefined){ if(wasPushed)return; merged.push(x); handled.add(id); return; } // locally deleted (pending) -> keep deleted
+    if(l!==prevMap[id]&&l!==cloudMap[id])merged.push(JSON.parse(l)); // local edit not yet pushed -> keep local
+    else merged.push(x);
+    handled.add(id);
+  });
+  (localArr||[]).forEach(x=>{ if(!handled.has(x.id)&&prevMap[x.id]===undefined)merged.push(x); }); // local add not yet pushed
+  return merged;
+}
 function startSync(){
-  firstSnap={c:true,s:true};lastPush={cust:{},sales:{},meta:''};
+  firstSnap={c:true,s:true};lastPush={cust:{},sales:{},logs:{},meta:''};
   col('customers').onSnapshot(qs=>{
-    const cloud=qs.docs.map(d=>d.data());
-    lastPush.cust={};qs.docs.forEach(d=>lastPush.cust[d.id]=JSON.stringify(d.data()));
+    const prev=lastPush.cust||{};
     if(firstSnap.c){firstSnap.c=false;
+      const cloud=qs.docs.map(d=>d.data());
       const ids=new Set(cloud.map(c=>c.id));
       state.customers=[...cloud,...state.customers.filter(c=>!ids.has(c.id))];
-      schedulePush();
-    }else state.customers=cloud;
+    }else{
+      state.customers=mergeCloud(state.customers,qs.docs,prev);
+    }
+    lastPush.cust={};qs.docs.forEach(d=>lastPush.cust[d.id]=JSON.stringify(d.data()));
+    schedulePush();
     localStorage.setItem(KEY,JSON.stringify(state));refreshUI();
   },e=>console.error(e));
   col('sales').onSnapshot(qs=>{
-    const cloud=qs.docs.map(d=>d.data());
-    lastPush.sales={};qs.docs.forEach(d=>lastPush.sales[d.id]=JSON.stringify(d.data()));
+    const prev=lastPush.sales||{};
     if(firstSnap.s){firstSnap.s=false;
+      const cloud=qs.docs.map(d=>d.data());
       const ids=new Set(cloud.map(s=>s.id));
       state.sales=[...cloud,...state.sales.filter(s=>!ids.has(s.id))];
-      schedulePush();
-    }else state.sales=cloud;
+    }else{
+      state.sales=mergeCloud(state.sales,qs.docs,prev);
+    }
+    lastPush.sales={};qs.docs.forEach(d=>lastPush.sales[d.id]=JSON.stringify(d.data()));
+    schedulePush();
     localStorage.setItem(KEY,JSON.stringify(state));refreshUI();
+  },e=>console.error(e));
+  col('logs').onSnapshot(qs=>{
+    state.logs=state.logs||[];
+    const have=new Set(state.logs.map(l=>l.id));
+    qs.docs.forEach(d=>{const l=d.data();lastPush.logs[l.id]=1;if(!have.has(l.id)){state.logs.push(l);have.add(l.id);}});
+    state.logs.sort((a,b)=>a.ts-b.ts);
+    if(state.logs.length>3000)state.logs=state.logs.slice(-3000);
+    localStorage.setItem(KEY,JSON.stringify(state));
+    if(curPage==='log')renderLog();
   },e=>console.error(e));
   metaDoc().onSnapshot(d=>{
     if(!d.exists)return;
     const m=d.data();
     state.brands=m.brands||state.brands;state.shop=m.shop||state.shop;
     if(Array.isArray(m.branches)&&m.branches.length)state.branches=m.branches;
+    if(m.catalog&&typeof m.catalog==='object'&&!Array.isArray(m.catalog))state.catalog=m.catalog;
     state.seq=Math.max(state.seq,m.seq||0);state.billSeq=Math.max(state.billSeq,m.billSeq||0);
-    lastPush.meta=JSON.stringify({brands:state.brands,branches:state.branches,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
-    localStorage.setItem(KEY,JSON.stringify(state));fillBrands();fillBranches();
+    lastPush.meta=JSON.stringify({brands:state.brands,branches:state.branches,catalog:state.catalog,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
+    localStorage.setItem(KEY,JSON.stringify(state));fillBrands();fillBranches();fillModels();if(curPage==='setting')renderCatalog();
   });
 }
 function schedulePush(){if(!fbUser||!fbDB)return;clearTimeout(pushTimer);pushTimer=setTimeout(cloudPush,800);}
@@ -1285,14 +1454,16 @@ async function cloudPush(){
     for(const id in lastPush.cust)if(!cur.cust[id])ops.push(['del',col('customers').doc(id)]);
     for(const id in cur.sales)if(lastPush.sales[id]!==cur.sales[id])ops.push(['set',col('sales').doc(id),JSON.parse(cur.sales[id])]);
     for(const id in lastPush.sales)if(!cur.sales[id])ops.push(['del',col('sales').doc(id)]);
-    const meta=JSON.stringify({brands:state.brands,branches:state.branches,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
+    const curLogs={};
+    (state.logs||[]).forEach(l=>{curLogs[l.id]=1;if(!lastPush.logs[l.id])ops.push(['set',col('logs').doc(l.id),l]);});
+    const meta=JSON.stringify({brands:state.brands,branches:state.branches,catalog:state.catalog,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
     if(meta!==lastPush.meta)ops.push(['set',metaDoc(),JSON.parse(meta)]);
     for(let i=0;i<ops.length;i+=400){
       const b=fbDB.batch();
       ops.slice(i,i+400).forEach(([t,ref,data])=>t==='set'?b.set(ref,data):b.delete(ref));
       await b.commit();
     }
-    lastPush={cust:cur.cust,sales:cur.sales,meta};
+    lastPush={cust:cur.cust,sales:cur.sales,logs:Object.assign({},lastPush.logs,curLogs),meta};
   }catch(e){console.error('sync push error',e);}
 }
 let curPage='dash';
@@ -1308,7 +1479,7 @@ document.getElementById('sale-date').value=today();
 document.getElementById('cl-date').value=today();
 fillBranches();
 quickRange('month',document.querySelector('#page-report .pill.active'));
-fillBrands();renderCart();renderDash();initCloud();
+fillBrands();fillModels();renderCart();renderDash();initCloud();
 </script>
 </body>
 </html>
