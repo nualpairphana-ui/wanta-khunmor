@@ -305,15 +305,16 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
             <button class="pill" onclick="repRange('year',this,'rp-from','rp-to',renderSummary)">ปีนี้</button>
             <button class="pill" onclick="repRange('all',this,'rp-from','rp-to',renderSummary)">ทั้งหมด</button>
           </div>
-          <div class="row" style="margin-bottom:0">
+          <div class="row">
             <div><label>ตั้งแต่วันที่</label><input type="date" id="rp-from" onchange="renderSummary()"></div>
             <div><label>ถึงวันที่</label><input type="date" id="rp-to" onchange="renderSummary()"></div>
             <div><label>สาขา</label><select id="rp-branch" onchange="renderSummary()"><option value="">ทุกสาขา</option></select></div>
-            <div style="flex:0;align-self:flex-end;display:flex;gap:8px">
-              <button class="btn ghost" onclick="exportSalesXLSX()">Excel</button>
-              <button class="btn ghost" onclick="exportSalesCSV()">CSV</button>
-              <button class="btn ghost" onclick="window.print()">PDF</button>
-            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="muted" style="margin-right:2px">ส่งออกข้อมูล:</span>
+            <button class="btn ghost" onclick="exportSalesXLSX()">Excel</button>
+            <button class="btn ghost" onclick="exportSalesCSV()">CSV</button>
+            <button class="btn ghost" onclick="window.print()">PDF</button>
           </div>
         </div>
         <div class="cards">
@@ -339,15 +340,16 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
             <button class="pill" onclick="repRange('year',this,'pf-from','pf-to',renderProduct)">ปีนี้</button>
             <button class="pill" onclick="repRange('all',this,'pf-from','pf-to',renderProduct)">ทั้งหมด</button>
           </div>
-          <div class="row" style="margin-bottom:0">
+          <div class="row">
             <div><label>ตั้งแต่วันที่</label><input type="date" id="pf-from" onchange="renderProduct()"></div>
             <div><label>ถึงวันที่</label><input type="date" id="pf-to" onchange="renderProduct()"></div>
             <div><label>สาขา</label><select id="pf-branch" onchange="renderProduct()"><option value="">ทุกสาขา</option></select></div>
-            <div style="flex:0;align-self:flex-end;display:flex;gap:8px">
-              <button class="btn ghost" onclick="exportProductXLSX()">Excel</button>
-              <button class="btn ghost" onclick="exportProductCSV()">CSV</button>
-              <button class="btn ghost" onclick="window.print()">PDF</button>
-            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="muted" style="margin-right:2px">ส่งออกข้อมูล:</span>
+            <button class="btn ghost" onclick="exportProductXLSX()">Excel</button>
+            <button class="btn ghost" onclick="exportProductCSV()">CSV</button>
+            <button class="btn ghost" onclick="window.print()">PDF</button>
           </div>
         </div>
         <div class="cards">
@@ -373,15 +375,16 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
             <button class="pill" onclick="repRange('year',this,'cf-from','cf-to',renderClaim)">ปีนี้</button>
             <button class="pill" onclick="repRange('all',this,'cf-from','cf-to',renderClaim)">ทั้งหมด</button>
           </div>
-          <div class="row" style="margin-bottom:0">
+          <div class="row">
             <div><label>ตั้งแต่วันที่</label><input type="date" id="cf-from" onchange="renderClaim()"></div>
             <div><label>ถึงวันที่</label><input type="date" id="cf-to" onchange="renderClaim()"></div>
             <div><label>สาขา</label><select id="cf-branch" onchange="renderClaim()"><option value="">ทุกสาขา</option></select></div>
-            <div style="flex:0;align-self:flex-end;display:flex;gap:8px">
-              <button class="btn ghost" onclick="exportClaimXLSX()">Excel</button>
-              <button class="btn ghost" onclick="exportClaimCSV()">CSV</button>
-              <button class="btn ghost" onclick="window.print()">PDF</button>
-            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="muted" style="margin-right:2px">ส่งออกข้อมูล:</span>
+            <button class="btn ghost" onclick="exportClaimXLSX()">Excel</button>
+            <button class="btn ghost" onclick="exportClaimCSV()">CSV</button>
+            <button class="btn ghost" onclick="window.print()">PDF</button>
           </div>
         </div>
         <div class="cards">
