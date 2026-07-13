@@ -416,6 +416,19 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
   <div class="modal" id="view-body"></div>
 </div>
 
+<!-- ===== EDIT BRANCH MODAL ===== -->
+<div class="modal-bg" id="branch-modal">
+  <div class="modal" style="max-width:380px">
+    <h2>แก้ไขสาขาของบิลนี้ <button class="close-x" onclick="closeModal('branch-modal')">✕</button></h2>
+    <input type="hidden" id="eb-id">
+    <div class="row" style="margin-top:12px"><div><label>สาขาที่ขาย/เคลม</label><select id="eb-branch"></select></div></div>
+    <div style="text-align:right;margin-top:14px">
+      <button class="btn ghost" onclick="closeModal('branch-modal')">ยกเลิก</button>
+      <button class="btn red" onclick="saveBranchEdit()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== RECEIPT MODAL ===== -->
 <div class="modal-bg" id="bill-modal">
   <div class="modal" style="max-width:520px">
@@ -508,11 +521,28 @@ function salesTable(list){
     const items=isClaim
       ? `<span class="badge cat-เคลม">เคลม${s.cn?' '+esc(s.cn):''}</span> ${esc(claimTypeStr(s)||'-')}${s.reason?`<div class="muted">${esc(s.reason)}</div>`:''}`
       : s.items.map(i=>`<span class="badge cat-${esc(i.category)}">${esc(i.category)}</span> ${esc(i.brand?i.brand+' ':'')}${esc(i.name)} ×${i.qty}`).join('<br>');
-    h+=`<tr><td>${thDate(s.date)}</td><td>${s.customerId?`<span class="link" onclick="viewCustomer('${s.customerId}')">${esc(custName(s.customerId))}</span>`:'ลูกค้าทั่วไป'}<div class="muted" style="font-size:11px">🏢 ${esc(s.branch||'สาขาหลัก')}</div></td><td>${items}${s.rx?`<div class="muted">👓 ${esc(rxStr(s.rx))}</div>`:''}${s.note?`<div class="muted">📝 ${esc(s.note)}</div>`:''}</td><td class="num"><b>${fmt(s.total)}</b>${s.discount?`<div class="muted">ลด ${fmt(s.discount)}</div>`:''}${s.deposit?`<div class="muted">มัดจำ ${fmt(s.deposit)}</div>`:''}</td><td class="no-print"><button class="btn sm ghost" onclick="openBill('${s.id}')">${isClaim?'ใบเคลม':'บิล'}</button> <button class="btn sm ghost" onclick="delSale('${s.id}')">ลบ</button></td></tr>`;
+    h+=`<tr><td>${thDate(s.date)}</td><td>${s.customerId?`<span class="link" onclick="viewCustomer('${s.customerId}')">${esc(custName(s.customerId))}</span>`:'ลูกค้าทั่วไป'}<div class="muted" style="font-size:11px">🏢 <span class="link no-print" onclick="editSaleBranch('${s.id}')" title="แก้ไขสาขา">${esc(s.branch||'สาขาหลัก')}</span></div></td><td>${items}${s.rx?`<div class="muted">👓 ${esc(rxStr(s.rx))}</div>`:''}${s.note?`<div class="muted">📝 ${esc(s.note)}</div>`:''}</td><td class="num"><b>${fmt(s.total)}</b>${s.discount?`<div class="muted">ลด ${fmt(s.discount)}</div>`:''}${s.deposit?`<div class="muted">มัดจำ ${fmt(s.deposit)}</div>`:''}</td><td class="no-print"><button class="btn sm ghost" onclick="openBill('${s.id}')">${isClaim?'ใบเคลม':'บิล'}</button> <button class="btn sm ghost" onclick="delSale('${s.id}')">ลบ</button></td></tr>`;
   });
   return h+'</table>';
 }
 function delSale(id){if(!confirm('ลบบิลนี้?'))return;state.sales=state.sales.filter(s=>s.id!==id);save();renderDash();renderReport();toast('ลบบิลแล้ว');}
+function editSaleBranch(id){
+  const s=state.sales.find(x=>x.id===id);if(!s)return;
+  const list=state.branches||[];
+  const cur=s.branch||'สาขาหลัก';
+  const opts=list.slice();if(!opts.includes(cur))opts.unshift(cur);
+  document.getElementById('eb-id').value=id;
+  const sel=document.getElementById('eb-branch');
+  sel.innerHTML=opts.map(b=>`<option>${esc(b)}</option>`).join('');
+  sel.value=cur;
+  document.getElementById('branch-modal').classList.add('open');
+}
+function saveBranchEdit(){
+  const id=document.getElementById('eb-id').value;
+  const s=state.sales.find(x=>x.id===id);if(!s)return;
+  s.branch=document.getElementById('eb-branch').value;
+  save();closeModal('branch-modal');renderDash();renderReport();toast('แก้ไขสาขาของบิลแล้ว');
+}
 
 // ============ CUSTOMERS ============
 function genHN(){
