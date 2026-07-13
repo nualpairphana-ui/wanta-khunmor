@@ -199,7 +199,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
         </select>
       </div>
       <div><label>แบรนด์</label><input id="it-brand" list="brand-list" placeholder="เช่น Rayban" oninput="fillModels()" onchange="fillModels()"><datalist id="brand-list"></datalist></div>
-      <div style="flex:1.5"><label>ชื่อสินค้า/รุ่น</label><input id="it-name" list="model-list" placeholder="เช่น RB3025 Aviator"><datalist id="model-list"></datalist></div>
+      <div style="flex:1.5"><label>ชื่อสินค้า/รุ่น</label><input id="it-name" list="model-list" placeholder="เช่น RB3025 Aviator" oninput="applyModelPrice()" onchange="applyModelPrice()"><datalist id="model-list"></datalist></div>
       <div style="max-width:90px"><label>จำนวน</label><input type="number" id="it-qty" value="1" min="1"></div>
       <div style="max-width:130px"><label>ราคา/ชิ้น (บาท)</label><input type="number" id="it-price" min="0" placeholder="0"></div>
       <div style="max-width:140px"><label>ส่วนลดรายการ</label><div style="display:flex;gap:4px"><input type="number" id="it-disc" min="0" placeholder="0" style="width:100%;min-width:0"><select id="it-disc-type" style="width:auto"><option value="thb">฿</option><option value="pct">%</option></select></div></div>
@@ -373,15 +373,6 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
     <div id="catalog-box"></div>
   </div>
   <div class="panel">
-    <h3 style="margin-top:0">แบรนด์รวม (ทั่วไป)</h3>
-    <p class="muted">แบรนด์ที่ไม่ได้แยกหมวด — ยังขึ้นเป็นตัวเลือกแบรนด์ตอนขายเช่นกัน</p>
-    <div class="row" style="margin-top:10px">
-      <div><input id="new-brand" placeholder="ชื่อแบรนด์ใหม่ เช่น Gucci"></div>
-      <div style="flex:0"><button class="btn" onclick="addBrand()">เพิ่มแบรนด์</button></div>
-    </div>
-    <div id="brand-chips"></div>
-  </div>
-  <div class="panel">
     <h3 style="margin-top:0">ซิงก์ข้อมูลหลายเครื่อง (Firebase)</h3>
     <div id="sync-status" class="muted">ยังไม่ได้ตั้งค่า — ข้อมูลเก็บในเครื่องนี้เท่านั้น</div>
     <div id="sync-setup" style="margin-top:10px">
@@ -510,6 +501,7 @@ function load(){
   if(!Array.isArray(d.branches)||!d.branches.length)d.branches=['สาขาหลัก','สาขาโรงพยาบาลกรุงเทพ'];
   if(!Array.isArray(d.logs))d.logs=[];
   if(!d.catalog||typeof d.catalog!=='object'||Array.isArray(d.catalog))d.catalog={};
+  normalizeCatalog(d.catalog);
   return d;
 }
 let state=load();
@@ -900,8 +892,7 @@ function addItem(){
   const discType=document.getElementById('it-disc-type').value;
   const cat=document.getElementById('it-cat').value;
   cart.push({category:cat,brand,name:name||'-',qty,price,disc,discType});
-  if(brand&&!state.brands.some(b=>b.toLowerCase()===brand.toLowerCase()))state.brands.push(brand);
-  if(brand){catEnsure(cat,brand);if(name&&name!=='-'&&!state.catalog[cat][brand].includes(name))state.catalog[cat][brand].push(name);}
+  if(brand){catEnsure(cat,brand);if(name&&name!=='-'){const ex=state.catalog[cat][brand].find(m=>modelName(m)===name);if(!ex)state.catalog[cat][brand].push({name,price:price>0?price:''});else if(modelPrice(ex)===''&&price>0)ex.price=price;}}
   if(brand)save();fillBrands();fillModels();
   document.getElementById('it-name').value='';document.getElementById('it-price').value='';
   document.getElementById('it-qty').value=1;document.getElementById('it-brand').value='';
@@ -1129,16 +1120,33 @@ function barTable(obj,total){
 function catBrands(cat){return (state.catalog&&state.catalog[cat])?Object.keys(state.catalog[cat]):[];}
 function fillBrands(){
   const cat=(document.getElementById('it-cat')||{}).value||'';
-  const set=new Set([...catBrands(cat),...(state.brands||[])]);
-  document.getElementById('brand-list').innerHTML=[...set].map(b=>`<option value="${esc(b)}">`).join('');
+  const el=document.getElementById('brand-list');if(!el)return;
+  el.innerHTML=catBrands(cat).map(b=>`<option value="${esc(b)}">`).join('');
 }
 function fillModels(){
   const cat=(document.getElementById('it-cat')||{}).value||'';
   const brand=(document.getElementById('it-brand')||{}).value.trim()||'';
   const models=(state.catalog&&state.catalog[cat]&&state.catalog[cat][brand])||[];
-  const el=document.getElementById('model-list');if(el)el.innerHTML=models.map(m=>`<option value="${esc(m)}">`).join('');
+  const el=document.getElementById('model-list');if(el)el.innerHTML=models.map(m=>`<option value="${esc(modelName(m))}">${modelPrice(m)!==''?'฿'+fmt(modelPrice(m)):''}</option>`).join('');
+}
+function applyModelPrice(){
+  const cat=(document.getElementById('it-cat')||{}).value||'';
+  const brand=(document.getElementById('it-brand')||{}).value.trim()||'';
+  const name=(document.getElementById('it-name')||{}).value.trim()||'';
+  const m=findModel(cat,brand,name);
+  const pEl=document.getElementById('it-price');
+  if(m&&modelPrice(m)!==''&&!pEl.value)pEl.value=modelPrice(m);
+}
+function modelName(m){return typeof m==='string'?m:(m&&m.name)||'';}
+function modelPrice(m){return typeof m==='string'?'':((m&&(m.price||m.price===0))?m.price:'');}
+function normalizeCatalog(cat){
+  if(!cat||typeof cat!=='object')return;
+  Object.values(cat).forEach(brands=>{if(brands&&typeof brands==='object')Object.keys(brands).forEach(bn=>{
+    const arr=brands[bn];if(Array.isArray(arr))brands[bn]=arr.map(m=>({name:modelName(m),price:modelPrice(m)}));
+  });});
 }
 function catEnsure(cat,brand){state.catalog=state.catalog||{};if(!state.catalog[cat])state.catalog[cat]={};if(brand&&!state.catalog[cat][brand])state.catalog[cat][brand]=[];}
+function findModel(cat,brand,name){const arr=(state.catalog&&state.catalog[cat]&&state.catalog[cat][brand])||[];return arr.find(m=>modelName(m)===name);}
 function renderCatalog(){
   const box=document.getElementById('catalog-box');if(!box)return;
   const cat=document.getElementById('cat-sel').value;
@@ -1147,7 +1155,7 @@ function renderCatalog(){
   if(!names.length){box.innerHTML='<div class="empty">ยังไม่มีแบรนด์ในหมวดนี้ — เพิ่มด้านบน</div>';return;}
   box.innerHTML=names.map((bn,bi)=>{
     const models=brands[bn]||[];
-    const chips=models.length?models.map((m,mi)=>`<span class="brand-chip">${esc(m)} <b onclick="delCatModel(${bi},${mi})">✕</b></span>`).join(' '):'<span class="muted">ยังไม่มีรุ่น</span>';
+    const chips=models.length?models.map((m,mi)=>`<span class="brand-chip">${esc(modelName(m))}${modelPrice(m)!==''?' · ฿'+fmt(modelPrice(m)):' · <span class="muted">ยังไม่ตั้งราคา</span>'} <b onclick="editCatModelPrice(${bi},${mi})" title="แก้ราคาเต็ม">✎</b> <b onclick="delCatModel(${bi},${mi})" title="ลบรุ่น">✕</b></span>`).join(' '):'<span class="muted">ยังไม่มีรุ่น</span>';
     return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>${esc(bn)}</b> <button class="btn sm ghost" onclick="delCatBrand(${bi})">ลบแบรนด์</button></div>
       <div>${chips} <button class="btn sm" onclick="addCatModel(${bi})">+ เพิ่มรุ่น</button></div>
@@ -1172,20 +1180,30 @@ function delCatBrand(bi){
 function addCatModel(bi){
   const cat=document.getElementById('cat-sel').value;
   const names=Object.keys(state.catalog[cat]||{});const bn=names[bi];if(!bn)return;
-  const v=prompt('เพิ่มรุ่นของ "'+bn+'"','');if(v===null)return;const nv=v.trim();if(!nv)return;
-  if(state.catalog[cat][bn].includes(nv)){alert('มีรุ่นนี้แล้ว');return;}
-  state.catalog[cat][bn].push(nv);
-  addLog('เพิ่มรุ่น',cat+' · '+bn+' · '+nv);save();renderCatalog();fillModels();
+  const v=prompt('ชื่อรุ่นของ "'+bn+'"','');if(v===null)return;const nv=v.trim();if(!nv)return;
+  if(state.catalog[cat][bn].some(m=>modelName(m)===nv)){alert('มีรุ่นนี้แล้ว');return;}
+  const pr=prompt('ราคาเต็มของรุ่น "'+nv+'" (บาท) — เว้นว่างได้','');
+  const price=pr===null?'':(pr.trim()===''?'':(+pr.trim()||''));
+  state.catalog[cat][bn].push({name:nv,price});
+  addLog('เพิ่มรุ่น',cat+' · '+bn+' · '+nv+(price!==''?' · ฿'+price:''));save();renderCatalog();fillModels();
+}
+function editCatModelPrice(bi,mi){
+  const cat=document.getElementById('cat-sel').value;
+  const names=Object.keys(state.catalog[cat]||{});const bn=names[bi];if(!bn)return;
+  const m=state.catalog[cat][bn][mi];if(!m)return;
+  const pr=prompt('ราคาเต็มของรุ่น "'+modelName(m)+'" (บาท) — เว้นว่าง = ไม่ตั้งราคา',modelPrice(m)===''?'':modelPrice(m));
+  if(pr===null)return;
+  m.price=pr.trim()===''?'':(+pr.trim()||'');
+  addLog('ตั้งราคาเต็ม',cat+' · '+bn+' · '+modelName(m)+' · '+(m.price!==''?'฿'+m.price:'ล้างราคา'));save();renderCatalog();fillModels();
 }
 function delCatModel(bi,mi){
   const cat=document.getElementById('cat-sel').value;
   const names=Object.keys(state.catalog[cat]||{});const bn=names[bi];if(!bn)return;
   const m=state.catalog[cat][bn][mi];
   state.catalog[cat][bn].splice(mi,1);
-  addLog('ลบรุ่น',cat+' · '+bn+' · '+(m||''));save();renderCatalog();fillModels();
+  addLog('ลบรุ่น',cat+' · '+bn+' · '+(modelName(m)||''));save();renderCatalog();fillModels();
 }
 function renderBrands(){
-  document.getElementById('brand-chips').innerHTML=state.brands.map((b,i)=>`<span class="brand-chip">${esc(b)} <b onclick="delBrand(${i})">✕</b></span>`).join('');
   renderBranches();renderCatalog();
   ['addr1','addr2','fb','line','tel'].forEach(k=>document.getElementById('shop-'+k).value=state.shop[k]||'');
   updateSyncUI();
@@ -1194,12 +1212,6 @@ function saveShop(){
   ['addr1','addr2','fb','line','tel'].forEach(k=>state.shop[k]=document.getElementById('shop-'+k).value.trim());
   save();toast('บันทึกข้อมูลร้านแล้ว');
 }
-function addBrand(){
-  const v=document.getElementById('new-brand').value.trim();if(!v)return;
-  if(!state.brands.some(b=>b.toLowerCase()===v.toLowerCase()))state.brands.push(v);
-  document.getElementById('new-brand').value='';save();renderBrands();fillBrands();
-}
-function delBrand(i){state.brands.splice(i,1);save();renderBrands();fillBrands();}
 // ===== branches =====
 function fillBranches(){
   const list=state.branches||[];
@@ -1436,7 +1448,7 @@ function startSync(){
     const m=d.data();
     state.brands=m.brands||state.brands;state.shop=m.shop||state.shop;
     if(Array.isArray(m.branches)&&m.branches.length)state.branches=m.branches;
-    if(m.catalog&&typeof m.catalog==='object'&&!Array.isArray(m.catalog))state.catalog=m.catalog;
+    if(m.catalog&&typeof m.catalog==='object'&&!Array.isArray(m.catalog)){state.catalog=m.catalog;normalizeCatalog(state.catalog);}
     state.seq=Math.max(state.seq,m.seq||0);state.billSeq=Math.max(state.billSeq,m.billSeq||0);
     lastPush.meta=JSON.stringify({brands:state.brands,branches:state.branches,catalog:state.catalog,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
     localStorage.setItem(KEY,JSON.stringify(state));fillBrands();fillBranches();fillModels();if(curPage==='setting')renderCatalog();
