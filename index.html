@@ -393,7 +393,14 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
             <div><label>เพิ่มแบรนด์ในหมวดนี้</label><input id="new-cat-brand" placeholder="เช่น Rayban" onkeydown="if(event.key==='Enter')addCatBrand()"></div>
             <div style="flex:0;align-self:flex-end"><button class="btn" onclick="addCatBrand()">เพิ่มแบรนด์</button></div>
           </div>
-          <div id="catalog-box"></div>
+          <div class="row" style="margin-top:4px">
+            <div style="max-width:200px"><label>เพิ่มรุ่น — แบรนด์</label><select id="am-brand"></select></div>
+            <div><label>ชื่อรุ่น</label><input id="am-name" placeholder="เช่น RX5369" onkeydown="if(event.key==='Enter')addModelRow()"></div>
+            <div style="max-width:160px"><label>ราคาเต็ม (บาท)</label><input id="am-price" type="number" min="0" placeholder="0" onkeydown="if(event.key==='Enter')addModelRow()"></div>
+            <div style="flex:0;align-self:flex-end"><button class="btn" onclick="addModelRow()">เพิ่มรุ่น</button></div>
+          </div>
+          <div style="margin-top:12px;max-width:380px"><label>ค้นหารุ่น / แบรนด์ (ไว้เช็คข้อมูล)</label><input id="catalog-search" placeholder="พิมพ์ชื่อรุ่นหรือแบรนด์..." oninput="renderCatalog()"></div>
+          <div id="catalog-box" style="margin-top:10px"></div>
         </div>
       </div>
       <div class="set-section" id="set-sync">
@@ -1179,20 +1186,33 @@ function normalizeCatalog(cat){
 }
 function catEnsure(cat,brand){state.catalog=state.catalog||{};if(!state.catalog[cat])state.catalog[cat]={};if(brand&&!state.catalog[cat][brand])state.catalog[cat][brand]=[];}
 function findModel(cat,brand,name){const arr=(state.catalog&&state.catalog[cat]&&state.catalog[cat][brand])||[];return arr.find(m=>modelName(m)===name);}
+let _catRows=[];
+function fillAmBrands(){
+  const cat=document.getElementById('cat-sel').value;
+  const el=document.getElementById('am-brand');if(!el)return;
+  const brands=Object.keys(state.catalog[cat]||{});
+  const cur=el.value;
+  el.innerHTML=brands.length?brands.map(b=>`<option>${esc(b)}</option>`).join(''):'<option value="">— เพิ่มแบรนด์ก่อน —</option>';
+  if(brands.includes(cur))el.value=cur;
+}
 function renderCatalog(){
   const box=document.getElementById('catalog-box');if(!box)return;
   const cat=document.getElementById('cat-sel').value;
+  fillAmBrands();
   const brands=(state.catalog&&state.catalog[cat])||{};
-  const names=Object.keys(brands);
-  if(!names.length){box.innerHTML='<div class="empty">ยังไม่มีแบรนด์ในหมวดนี้ — เพิ่มด้านบน</div>';return;}
-  box.innerHTML=names.map((bn,bi)=>{
-    const models=brands[bn]||[];
-    const chips=models.length?models.map((m,mi)=>`<span class="brand-chip">${esc(modelName(m))}${modelPrice(m)!==''?' · ฿'+fmt(modelPrice(m)):' · <span class="muted">ยังไม่ตั้งราคา</span>'} <b onclick="editCatModelPrice(${bi},${mi})" title="แก้ราคาเต็ม">✎</b> <b onclick="delCatModel(${bi},${mi})" title="ลบรุ่น">✕</b></span>`).join(' '):'<span class="muted">ยังไม่มีรุ่น</span>';
-    return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>${esc(bn)}</b> <button class="btn sm ghost" onclick="delCatBrand(${bi})">ลบแบรนด์</button></div>
-      <div>${chips} <button class="btn sm" onclick="addCatModel(${bi})">+ เพิ่มรุ่น</button></div>
-    </div>`;
-  }).join('');
+  const bnames=Object.keys(brands);
+  const chips=bnames.length?`<div style="margin-bottom:12px"><span class="muted">แบรนด์ในหมวดนี้:</span> ${bnames.map((bn,bi)=>`<span class="brand-chip">${esc(bn)} <b onclick="delCatBrand(${bi})" title="ลบแบรนด์">✕</b></span>`).join(' ')}</div>`:'';
+  const q=(document.getElementById('catalog-search').value||'').toLowerCase().trim();
+  _catRows=[];let body='';
+  bnames.forEach(bn=>{(brands[bn]||[]).forEach((m,mi)=>{
+    const name=modelName(m),price=modelPrice(m);
+    if(q&&!((bn+' '+name).toLowerCase().includes(q)))return;
+    _catRows.push({brand:bn,mi});const idx=_catRows.length-1;
+    body+=`<tr><td>${esc(bn)}</td><td>${esc(name)}</td><td class="num"><input type="number" min="0" value="${price!==''?price:''}" placeholder="—" onchange="catPriceEdit(${idx},this.value)" style="width:130px;text-align:right"></td><td class="no-print"><button class="btn sm ghost" onclick="catDelModelIdx(${idx})">ลบ</button></td></tr>`;
+  });});
+  const table=body?`<table><tr><th>แบรนด์</th><th>รุ่น</th><th class="num">ราคาเต็ม (บาท)</th><th></th></tr>${body}</table>`
+    :`<div class="empty">${q?'ไม่พบรุ่นที่ค้นหา':'ยังไม่มีรุ่นในหมวดนี้ — เพิ่มด้านบน'}</div>`;
+  box.innerHTML=chips+table;
 }
 function addCatBrand(){
   const cat=document.getElementById('cat-sel').value;
@@ -1209,31 +1229,31 @@ function delCatBrand(bi){
   delete state.catalog[cat][bn];
   addLog('ลบแบรนด์ในหมวด',cat+' · '+bn);save();renderCatalog();fillBrands();fillModels();
 }
-function addCatModel(bi){
+function addModelRow(){
   const cat=document.getElementById('cat-sel').value;
-  const names=Object.keys(state.catalog[cat]||{});const bn=names[bi];if(!bn)return;
-  const v=prompt('ชื่อรุ่นของ "'+bn+'"','');if(v===null)return;const nv=v.trim();if(!nv)return;
-  if(state.catalog[cat][bn].some(m=>modelName(m)===nv)){alert('มีรุ่นนี้แล้ว');return;}
-  const pr=prompt('ราคาเต็มของรุ่น "'+nv+'" (บาท) — เว้นว่างได้','');
-  const price=pr===null?'':(pr.trim()===''?'':(+pr.trim()||''));
-  state.catalog[cat][bn].push({name:nv,price});
-  addLog('เพิ่มรุ่น',cat+' · '+bn+' · '+nv+(price!==''?' · ฿'+price:''));save();renderCatalog();fillModels();
+  const brand=document.getElementById('am-brand').value;
+  const name=document.getElementById('am-name').value.trim();
+  if(!brand){alert('เลือกแบรนด์ก่อน (หรือเพิ่มแบรนด์ด้านบน)');return;}
+  if(!name){alert('กรอกชื่อรุ่น');return;}
+  catEnsure(cat,brand);
+  if(state.catalog[cat][brand].some(m=>modelName(m)===name)){alert('มีรุ่นนี้แล้ว');return;}
+  const pr=document.getElementById('am-price').value.trim();
+  const price=pr===''?'':(+pr||'');
+  state.catalog[cat][brand].push({name,price});
+  document.getElementById('am-name').value='';document.getElementById('am-price').value='';
+  addLog('เพิ่มรุ่น',cat+' · '+brand+' · '+name+(price!==''?' · ฿'+price:''));save();renderCatalog();fillModels();
 }
-function editCatModelPrice(bi,mi){
-  const cat=document.getElementById('cat-sel').value;
-  const names=Object.keys(state.catalog[cat]||{});const bn=names[bi];if(!bn)return;
-  const m=state.catalog[cat][bn][mi];if(!m)return;
-  const pr=prompt('ราคาเต็มของรุ่น "'+modelName(m)+'" (บาท) — เว้นว่าง = ไม่ตั้งราคา',modelPrice(m)===''?'':modelPrice(m));
-  if(pr===null)return;
-  m.price=pr.trim()===''?'':(+pr.trim()||'');
-  addLog('ตั้งราคาเต็ม',cat+' · '+bn+' · '+modelName(m)+' · '+(m.price!==''?'฿'+m.price:'ล้างราคา'));save();renderCatalog();fillModels();
+function catPriceEdit(idx,val){
+  const cat=document.getElementById('cat-sel').value;const r=_catRows[idx];if(!r)return;
+  const m=state.catalog[cat][r.brand][r.mi];if(!m)return;
+  m.price=val.trim()===''?'':(+val||'');
+  addLog('ตั้งราคาเต็ม',cat+' · '+r.brand+' · '+modelName(m)+' · '+(m.price!==''?'฿'+m.price:'ล้างราคา'));save();fillModels();
 }
-function delCatModel(bi,mi){
-  const cat=document.getElementById('cat-sel').value;
-  const names=Object.keys(state.catalog[cat]||{});const bn=names[bi];if(!bn)return;
-  const m=state.catalog[cat][bn][mi];
-  state.catalog[cat][bn].splice(mi,1);
-  addLog('ลบรุ่น',cat+' · '+bn+' · '+(modelName(m)||''));save();renderCatalog();fillModels();
+function catDelModelIdx(idx){
+  const cat=document.getElementById('cat-sel').value;const r=_catRows[idx];if(!r)return;
+  const arr=state.catalog[cat][r.brand];const m=arr[r.mi];
+  arr.splice(r.mi,1);
+  addLog('ลบรุ่น',cat+' · '+r.brand+' · '+(modelName(m)||''));save();renderCatalog();fillModels();
 }
 function setTab(name){
   document.querySelectorAll('.set-section').forEach(s=>s.classList.remove('active'));
