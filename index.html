@@ -137,7 +137,11 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
   body.printing>*{display:none!important}
   body.printing>#print-area{display:block!important}
   #print-area{margin:0;padding:0}
-  #print-area .receipt-sheet{max-width:none;width:100%;border:none;margin:0;padding:0;box-shadow:none;font-size:12px}
+  #print-area .receipt-sheet{width:100%;max-width:126mm;margin:0 auto;padding:0;border:none;box-shadow:none;color:#000;font-size:12.5px;box-sizing:border-box}
+  #print-area .r-contact{flex-wrap:wrap;gap:2px 8px}
+  #print-area .r-sums div{gap:14px}
+  #print-area .r-sign{margin-top:18px}
+  #print-area *{overflow-wrap:anywhere}
 }
 </style>
 </head>
@@ -1231,13 +1235,14 @@ function printBill(){
   const holder=document.createElement('div');holder.id='print-area';holder.innerHTML=sheet.outerHTML;
   document.body.appendChild(holder);
   const st=document.createElement('style');
-  st.id='a5-page';st.textContent='@page{size:A5 portrait;margin:6mm}';
+  st.id='a5-page';st.textContent='@page{size:A5 portrait;margin:8mm}';
   document.head.appendChild(st);
   document.body.classList.add('printing');
-  const done=()=>{document.body.classList.remove('printing');document.getElementById('a5-page')?.remove();document.getElementById('print-area')?.remove();window.removeEventListener('afterprint',done);};
+  let cleaned=false;
+  const done=()=>{if(cleaned)return;cleaned=true;document.body.classList.remove('printing');document.getElementById('a5-page')?.remove();document.getElementById('print-area')?.remove();window.removeEventListener('afterprint',done);};
   window.addEventListener('afterprint',done);
   window.print();
-  setTimeout(done,1800);
+  setTimeout(done,60000); // safety cleanup only; keep A5-portrait active while the print dialog is open
 }
 function openClaim(id){
   const s=state.sales.find(x=>x.id===id);if(!s||s.kind!=='claim')return;
