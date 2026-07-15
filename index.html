@@ -23,6 +23,12 @@ nav{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
 nav button{font-family:'Prompt',sans-serif;font-size:15px;padding:8px 18px;border:none;background:none;cursor:pointer;border-radius:20px;color:var(--ink)}
 nav button:hover{background:var(--soft)}
 nav button.active{background:var(--ink);color:#fff}
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:5px 11px;border-radius:20px;white-space:nowrap;margin-left:10px;cursor:pointer}
+.sync-badge.ok{background:var(--accent-bg);color:var(--accent)}
+.sync-badge.bad{background:#fde2e2;color:#a32d2d}
+.sync-badge.wait{background:var(--soft);color:var(--muted)}
+.offline-banner{display:none;background:#fde2e2;color:#a32d2d;border:1px solid #f2b8b8;border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:14px;font-weight:500;cursor:pointer}
+.offline-banner:hover{background:#fcd5d5}
 main{max-width:1100px;margin:0 auto;padding:24px}
 .page{display:none}
 .page.active{display:block}
@@ -150,6 +156,7 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
       <div class="bottom">คุณหมอ</div>
     </div>
   </div>
+  <span id="sync-badge" class="sync-badge wait" onclick="go('setting');setTab('sync')" title="สถานะการเชื่อมคลาวด์">กำลังเชื่อม…</span>
   <nav>
     <button data-page="dash" class="active" onclick="go('dash')">หน้าหลัก</button>
     <button data-page="cust" onclick="go('cust')">ลูกค้า</button>
@@ -162,6 +169,7 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
 </header>
 
 <main>
+<div id="offline-banner" class="offline-banner no-print" onclick="go('setting');setTab('sync')">⚠️ ยังไม่ได้เชื่อมคลาวด์ — ข้อมูลจะเก็บอยู่แค่ในเครื่องนี้เท่านั้น (ไม่ได้สำรองขึ้นคลาวด์) กดที่นี่เพื่อตั้งค่าการซิงก์</div>
 
 <!-- ===== DASHBOARD ===== -->
 <section id="page-dash" class="page active">
@@ -677,7 +685,22 @@ function load(){
   return d;
 }
 let state=load();
-function save(){localStorage.setItem(KEY,JSON.stringify(state));schedulePush();}
+const LOCAL_SALES_CACHE=2000; // when synced, keep only this many most-recent bills in the browser cache (cloud holds all)
+function persistState(){
+  // Synced to cloud? -> cloud is the complete store; keep browser copy small (recent window) so it never hits the ~5MB cap.
+  if(typeof fbUser!=='undefined'&&fbUser&&fbDB){
+    return Object.assign({},state,{
+      sales:[...state.sales].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,LOCAL_SALES_CACHE),
+      logs:(state.logs||[]).slice(-800)
+    });
+  }
+  return state; // not synced -> the browser is the only store, must keep everything
+}
+function persistLocal(){
+  try{localStorage.setItem(KEY,JSON.stringify(persistState()));}
+  catch(e){console.error('localStorage quota',e);if(typeof toast==='function')toast('พื้นที่ในเครื่องเต็ม — ข้อมูลยังอยู่บนคลาวด์ครบ');}
+}
+function save(){persistLocal();schedulePush();}
 function tombstone(id){if(!id)return;state.deletedIds=state.deletedIds||[];if(!state.deletedIds.includes(id))state.deletedIds.push(id);if(state.deletedIds.length>8000)state.deletedIds=state.deletedIds.slice(-8000);}
 function isDeleted(id){return (state.deletedIds||[]).includes(id);}
 // ===== activity log =====
@@ -1670,7 +1693,7 @@ function importCust(inp){
 // ============ CLOUD SYNC (Firebase, optional) ============
 const FBKEY='kmoptical_fbcfg';
 const FB_EMBED={apiKey:"AIzaSyDDBZ8n7xpp5X0AkgTzv1ECPFF6UWHkbY4",authDomain:"wantakhunmor-afe6d.firebaseapp.com",projectId:"wantakhunmor-afe6d",storageBucket:"wantakhunmor-afe6d.firebasestorage.app",messagingSenderId:"297035862487",appId:"1:297035862487:web:ed9de90fb81f43e4e6fb92"};
-let fbUser=null,fbDB=null,pushTimer=null,lastPush={cust:{},sales:{},logs:{},meta:''},firstSnap={c:true,s:true},metaReady=false;
+let fbUser=null,fbDB=null,pushTimer=null,lastPush={cust:{},sales:{},logs:{},meta:''},firstSnap={c:true,s:true},metaReady=false,fbFailed=false;
 function fbCfg(){try{const c=JSON.parse(localStorage.getItem(FBKEY));if(c)return c;}catch(e){}return FB_EMBED;}
 function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
 async function initCloud(){
@@ -1689,7 +1712,7 @@ async function initCloud(){
       document.getElementById('login-overlay').style.display=u?'none':'flex';
       if(u)startSync();
     });
-  }catch(e){console.error(e);toast('เชื่อมต่อ Firebase ไม่สำเร็จ');}
+  }catch(e){console.error(e);fbFailed=true;updateSyncUI();toast('เชื่อมต่อคลาวด์ไม่สำเร็จ — ข้อมูลจะเก็บในเครื่องนี้ชั่วคราว');}
 }
 function lgMsg(m){document.getElementById('lg-msg').textContent=m;}
 function fbLogin(){
@@ -1714,12 +1737,22 @@ function saveFbCfg(){
 }
 function removeFbCfg(){if(confirm('เครื่องนี้จะหยุดซิงก์ (ข้อมูลบนคลาวด์ยังอยู่) ยืนยัน?')){localStorage.removeItem(FBKEY);location.reload();}}
 function updateSyncUI(){
-  const st=document.getElementById('sync-status');if(!st)return;
   const cfg=fbCfg();
+  const synced=!!fbUser;
+  const notSynced=!synced&&(!cfg||fbFailed); // app usable but data stays local only -> dangerous
+  const badge=document.getElementById('sync-badge');
+  if(badge){
+    if(synced){badge.className='sync-badge ok';badge.textContent='☁ ซิงก์แล้ว';}
+    else if(notSynced){badge.className='sync-badge bad';badge.textContent='⚠ ไม่ได้ซิงก์';}
+    else{badge.className='sync-badge wait';badge.textContent='กำลังเชื่อม…';}
+  }
+  const banner=document.getElementById('offline-banner');
+  if(banner)banner.style.display=notSynced?'block':'none';
+  const st=document.getElementById('sync-status');if(!st)return;
   document.getElementById('sync-setup').style.display=cfg?'none':'block';
   document.getElementById('sync-actions').style.display=cfg?'block':'none';
-  st.innerHTML=!cfg?'ยังไม่ได้ตั้งค่า — ข้อมูลเก็บในเครื่องนี้เท่านั้น':
-    fbUser?`✅ ซิงก์เปิดอยู่ — เข้าสู่ระบบเป็น <b>${esc(fbUser.email)}</b>`:'ตั้งค่าแล้ว — รอเข้าสู่ระบบ';
+  st.innerHTML=!cfg?'⚠️ ยังไม่ได้ตั้งค่า — ข้อมูลเก็บในเครื่องนี้เท่านั้น':
+    fbUser?`✅ ซิงก์เปิดอยู่ — เข้าสู่ระบบเป็น <b>${esc(fbUser.email)}</b>`:(fbFailed?'⚠️ เชื่อมคลาวด์ไม่ได้ (ออฟไลน์?) — เก็บในเครื่องชั่วคราว':'ตั้งค่าแล้ว — รอเข้าสู่ระบบ');
 }
 function col(name){return fbDB.collection('shops').doc(fbUser.uid).collection(name);}
 function metaDoc(){return fbDB.collection('shops').doc(fbUser.uid).collection('meta').doc('main');}
@@ -1757,7 +1790,7 @@ function startSync(){
     }
     lastPush.cust={};qs.docs.forEach(d=>lastPush.cust[d.id]=JSON.stringify(d.data()));
     schedulePush();
-    localStorage.setItem(KEY,JSON.stringify(state));refreshUI();
+    persistLocal();refreshUI();
   },e=>console.error(e));
   col('sales').onSnapshot(qs=>{
     const prev=lastPush.sales||{};
@@ -1771,7 +1804,7 @@ function startSync(){
     }
     lastPush.sales={};qs.docs.forEach(d=>lastPush.sales[d.id]=JSON.stringify(d.data()));
     schedulePush();
-    localStorage.setItem(KEY,JSON.stringify(state));refreshUI();
+    persistLocal();refreshUI();
   },e=>console.error(e));
   col('logs').onSnapshot(qs=>{
     state.logs=state.logs||[];
@@ -1779,7 +1812,7 @@ function startSync(){
     qs.docs.forEach(d=>{const l=d.data();lastPush.logs[l.id]=1;if(!have.has(l.id)){state.logs.push(l);have.add(l.id);}});
     state.logs.sort((a,b)=>a.ts-b.ts);
     if(state.logs.length>3000)state.logs=state.logs.slice(-3000);
-    localStorage.setItem(KEY,JSON.stringify(state));
+    persistLocal();
     if(curPage==='log')renderLog();
   },e=>console.error(e));
   metaDoc().onSnapshot(d=>{
@@ -1802,7 +1835,7 @@ function startSync(){
       if(state.deletedIds.length!==before||state.sales.length!==sBefore||state.customers.length!==cBefore){schedulePush();refreshUI();}
     }
     lastPush.meta=JSON.stringify({brands:state.brands,branches:state.branches,catalog:state.catalog,deleted:state.deletedIds,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
-    localStorage.setItem(KEY,JSON.stringify(state));fillBrands();fillBranches();fillModels();if(curPage==='setting')renderCatalog();
+    persistLocal();fillBrands();fillBranches();fillModels();if(curPage==='setting')renderCatalog();
   });
 }
 function schedulePush(){if(!fbUser||!fbDB)return;clearTimeout(pushTimer);pushTimer=setTimeout(cloudPush,800);}
