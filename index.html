@@ -7,12 +7,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#141414; --red:#d90000; --bg:#faf9f7; --card:#ffffff;
-  --line:#e8e5e0; --muted:#8a8680; --soft:#f3f1ed; --green:#0a7d33;
+  --ink:#1a1c1e; --red:#d92d20; --bg:#f6f7f9; --card:#ffffff;
+  --line:#e7e9ec; --muted:#8a9099; --soft:#f1f3f6; --green:#0a7d33;
+  --accent:#0f766e; --accent-bg:#e7f3f1; --shadow:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.07);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Prompt',sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
-header{background:var(--card);border-bottom:2px solid var(--ink);padding:14px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 26px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(16,24,40,.05)}
 .logo{display:flex;align-items:center;gap:12px}
 .logo svg{width:52px;height:38px}
 .logo-text{font-family:'Mali',cursive;line-height:1.1}
@@ -27,26 +28,30 @@ main{max-width:1100px;margin:0 auto;padding:24px}
 .page.active{display:block}
 h2{font-size:20px;font-weight:600;margin-bottom:16px}
 h3{font-size:16px;font-weight:600;margin:18px 0 10px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:22px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
-.card .label{color:var(--muted);font-size:13px;margin-bottom:6px}
-.card .value{font-size:26px;font-weight:600}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);transition:box-shadow .15s,transform .15s}
+.card:hover{box-shadow:0 4px 12px rgba(16,24,40,.08);transform:translateY(-1px)}
+.card .label{color:var(--muted);font-size:12.5px;font-weight:500;margin-bottom:8px;letter-spacing:.2px}
+.card .value{font-size:27px;font-weight:600;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
 .card .value.red{color:var(--red)}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:20px}
+.card .value.pos{color:var(--accent)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:20px;box-shadow:var(--shadow)}
 table{width:100%;border-collapse:collapse;font-size:14px}
-th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--ink);font-weight:600;white-space:nowrap}
+th{text-align:left;padding:9px 10px;border-bottom:1.5px solid var(--line);font-weight:600;white-space:nowrap;color:var(--muted);font-size:13px}
 td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:hover td{background:var(--soft)}
 .num{text-align:right}
 input,select,textarea{font-family:'Prompt',sans-serif;font-size:14px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--ink);border-color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
 label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
 .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .row>div{flex:1;min-width:130px}
-.btn{font-family:'Prompt',sans-serif;font-size:14px;padding:9px 20px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;white-space:nowrap}
-.btn:hover{opacity:.85}
-.btn.red{background:var(--red);border-color:var(--red)}
-.btn.ghost{background:#fff;color:var(--ink)}
+.btn{font-family:'Prompt',sans-serif;font-size:14px;font-weight:500;padding:9px 20px;border-radius:9px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;white-space:nowrap;transition:opacity .15s,background .15s}
+.btn:hover{opacity:.88}
+.btn:active{transform:translateY(1px)}
+.btn.red{background:var(--accent);border-color:var(--accent)}
+.btn.ghost{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{background:var(--soft);opacity:1}
 .btn.sm{padding:4px 12px;font-size:13px}
 .searchbar{display:flex;gap:10px;margin-bottom:16px}
 .searchbar input{flex:1}
@@ -77,12 +82,14 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
 .muted{color:var(--muted);font-size:13px}
 .empty{text-align:center;color:var(--muted);padding:30px 0}
 .total-line{font-size:20px;font-weight:600;text-align:right;margin:12px 0}
-.total-line span{color:var(--red);font-size:24px}
+.total-line #cart-total{color:var(--accent);font-size:25px;font-weight:700}
+.total-line #cart-remain{color:var(--red)}
 .pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .pill{padding:6px 16px;border-radius:20px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:'Prompt',sans-serif;font-size:14px}
 .pill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 28px;border-radius:30px;z-index:200;display:none;font-size:14px}
-.link{color:var(--red);cursor:pointer;text-decoration:underline}
+.link{color:var(--accent);cursor:pointer;text-decoration:none;font-weight:500}
+.link:hover{text-decoration:underline}
 .cust-pick{position:relative}
 .cust-drop{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:8px;max-height:220px;overflow-y:auto;z-index:20;display:none}
 .cust-drop div{padding:8px 12px;cursor:pointer}
@@ -156,7 +163,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
 <section id="page-dash" class="page active">
   <h2>ภาพรวมวันนี้ — <span id="dash-date"></span></h2>
   <div class="cards">
-    <div class="card"><div class="label">ยอดขายวันนี้</div><div class="value red" id="d-today">0</div></div>
+    <div class="card"><div class="label">ยอดขายวันนี้</div><div class="value pos" id="d-today">0</div></div>
     <div class="card"><div class="label">ยอดขายเดือนนี้</div><div class="value" id="d-month">0</div></div>
     <div class="card"><div class="label">บิลวันนี้</div><div class="value" id="d-bills">0</div></div>
     <div class="card"><div class="label">ลูกค้าทั้งหมด</div><div class="value" id="d-cust">0</div></div>
@@ -321,7 +328,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
           </div>
         </div>
         <div class="cards">
-          <div class="card"><div class="label">ยอดขายรวม</div><div class="value red" id="rp-total">0</div></div>
+          <div class="card"><div class="label">ยอดขายรวม</div><div class="value pos" id="rp-total">0</div></div>
           <div class="card"><div class="label">จำนวนบิล</div><div class="value" id="rp-bills">0</div></div>
           <div class="card"><div class="label">จำนวนชิ้น</div><div class="value" id="rp-items">0</div></div>
           <div class="card"><div class="label">เฉลี่ย/บิล</div><div class="value" id="rp-avg">0</div></div>
@@ -357,7 +364,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
         </div>
         <div class="cards">
           <div class="card"><div class="label">จำนวนชิ้นที่ขายได้</div><div class="value" id="pr-qty">0</div></div>
-          <div class="card"><div class="label">ยอดขายสินค้ารวม</div><div class="value red" id="pr-amt">0</div></div>
+          <div class="card"><div class="label">ยอดขายสินค้ารวม</div><div class="value pos" id="pr-amt">0</div></div>
           <div class="card"><div class="label">จำนวนรายการสินค้า</div><div class="value" id="pr-kinds">0</div></div>
         </div>
         <div class="panel"><h3 style="margin-top:0">จำนวนที่ขายได้ แยกตามหมวดสินค้า</h3><div id="pr-cat"></div></div>
@@ -392,7 +399,7 @@ body.print-bill .receipt-sheet{position:fixed;left:0;top:0;width:100%;max-width:
         </div>
         <div class="cards">
           <div class="card"><div class="label">จำนวนใบเคลม</div><div class="value" id="cr-count">0</div></div>
-          <div class="card"><div class="label">เพิ่มเงินรวม</div><div class="value red" id="cr-add">0</div></div>
+          <div class="card"><div class="label">เพิ่มเงินรวม</div><div class="value pos" id="cr-add">0</div></div>
           <div class="card"><div class="label">เคลมเลนส์</div><div class="value" id="cr-lens">0</div></div>
           <div class="card"><div class="label">เคลมกรอบแว่น</div><div class="value" id="cr-frame">0</div></div>
         </div>
@@ -858,7 +865,7 @@ function custDrop(q){
   if(!q){box.style.display='none';return;}
   const m=state.customers.filter(c=>(c.name+' '+(c.phone||'')).toLowerCase().includes(q)).slice(0,8);
   box.innerHTML=m.map(c=>`<div onclick="pickCust('${c.id}')">${esc(c.name)} <span class="muted">${esc(c.phone||'')}</span></div>`).join('')
-    +`<div onclick="newCustFromSale()" style="color:var(--red);font-weight:500">+ สร้าง "${esc(document.getElementById('sale-cust-input').value.trim())}" เป็นลูกค้าใหม่</div>`;
+    +`<div onclick="newCustFromSale()" style="color:var(--accent);font-weight:500">+ สร้าง "${esc(document.getElementById('sale-cust-input').value.trim())}" เป็นลูกค้าใหม่</div>`;
   box.style.display='block';
 }
 let saleCtx=false;
@@ -884,7 +891,7 @@ function claimCustDrop(q){
   if(!q){box.style.display='none';return;}
   const m=state.customers.filter(c=>(c.name+' '+(c.phone||'')).toLowerCase().includes(q)).slice(0,8);
   box.innerHTML=m.map(c=>`<div onclick="pickClaimCust('${c.id}')">${esc(c.name)} <span class="muted">${esc(c.phone||'')}</span></div>`).join('')
-    +`<div onclick="newCustFromClaim()" style="color:var(--red);font-weight:500">+ สร้าง "${esc(document.getElementById('cl-cust-input').value.trim())}" เป็นลูกค้าใหม่</div>`;
+    +`<div onclick="newCustFromClaim()" style="color:var(--accent);font-weight:500">+ สร้าง "${esc(document.getElementById('cl-cust-input').value.trim())}" เป็นลูกค้าใหม่</div>`;
   box.style.display='block';
 }
 function newCustFromClaim(){
@@ -1396,8 +1403,8 @@ function barTable(obj,total){
   if(!e.length)return '<div class="empty">ไม่มีข้อมูล</div>';
   return e.map(([k,v])=>{
     const pct=total?Math.round(v/total*100):0;
-    return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:14px"><span>${esc(k)}</span><b>${fmt(v)} ฿ (${pct}%)</b></div>
-    <div style="background:var(--soft);border-radius:6px;height:10px;margin-top:4px"><div style="background:var(--red);width:${pct}%;height:10px;border-radius:6px"></div></div></div>`;
+    return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14px"><span>${esc(k)}</span><b>${fmt(v)} ฿ <span class="muted" style="font-weight:400">(${pct}%)</span></b></div>
+    <div style="background:var(--soft);border-radius:6px;height:9px;margin-top:5px;overflow:hidden"><div style="background:var(--accent);width:${pct}%;height:9px;border-radius:6px"></div></div></div>`;
   }).join('');
 }
 
