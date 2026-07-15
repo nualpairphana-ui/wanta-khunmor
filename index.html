@@ -668,11 +668,14 @@ function load(){
   if(!Array.isArray(d.branches)||!d.branches.length)d.branches=['สาขาหลัก','สาขาโรงพยาบาลกรุงเทพ'];
   if(!Array.isArray(d.logs))d.logs=[];
   if(!d.catalog||typeof d.catalog!=='object'||Array.isArray(d.catalog))d.catalog={};
+  if(!Array.isArray(d.deletedIds))d.deletedIds=[];
   normalizeCatalog(d.catalog);
   return d;
 }
 let state=load();
 function save(){localStorage.setItem(KEY,JSON.stringify(state));schedulePush();}
+function tombstone(id){if(!id)return;state.deletedIds=state.deletedIds||[];if(!state.deletedIds.includes(id))state.deletedIds.push(id);if(state.deletedIds.length>8000)state.deletedIds=state.deletedIds.slice(-8000);}
+function isDeleted(id){return (state.deletedIds||[]).includes(id);}
 // ===== activity log =====
 function addLog(action,detail){
   state.logs=state.logs||[];
@@ -752,7 +755,7 @@ function salesTable(list){
   });
   return h+'</table>';
 }
-function delSale(id){if(!confirm('ลบบิลนี้?'))return;const s=state.sales.find(x=>x.id===id);state.sales=state.sales.filter(s=>s.id!==id);addLog(s&&s.kind==='claim'?'ลบใบเคลม':'ลบบิลขาย',s?((s.billNo||s.cn||'')+' · '+fmt(s.total)+' บาท · '+(s.branch||'สาขาหลัก')):id);save();renderDash();renderReport();toast('ลบบิลแล้ว');}
+function delSale(id){if(!confirm('ลบบิลนี้?'))return;const s=state.sales.find(x=>x.id===id);state.sales=state.sales.filter(s=>s.id!==id);tombstone(id);addLog(s&&s.kind==='claim'?'ลบใบเคลม':'ลบบิลขาย',s?((s.billNo||s.cn||'')+' · '+fmt(s.total)+' บาท · '+(s.branch||'สาขาหลัก')):id);save();renderDash();renderReport();toast('ลบบิลแล้ว');}
 function editSaleBranch(id){
   const s=state.sales.find(x=>x.id===id);if(!s)return;
   const list=state.branches||[];
@@ -832,6 +835,7 @@ function delCustomer(id){
   if(!confirm('ลบลูกค้ารายนี้? (ประวัติการขายจะยังอยู่แต่แสดงเป็นลูกค้าทั่วไป)'))return;
   const c=state.customers.find(x=>x.id===id);
   state.customers=state.customers.filter(c=>c.id!==id);
+  tombstone(id);
   addLog('ลบลูกค้า',c?('HN '+c.code+' · '+c.name):id);
   save();renderCustomers();toast('ลบลูกค้าแล้ว');
 }
@@ -1658,7 +1662,7 @@ function importCust(inp){
 // ============ CLOUD SYNC (Firebase, optional) ============
 const FBKEY='kmoptical_fbcfg';
 const FB_EMBED={apiKey:"AIzaSyDDBZ8n7xpp5X0AkgTzv1ECPFF6UWHkbY4",authDomain:"wantakhunmor-afe6d.firebaseapp.com",projectId:"wantakhunmor-afe6d",storageBucket:"wantakhunmor-afe6d.firebasestorage.app",messagingSenderId:"297035862487",appId:"1:297035862487:web:ed9de90fb81f43e4e6fb92"};
-let fbUser=null,fbDB=null,pushTimer=null,lastPush={cust:{},sales:{},logs:{},meta:''},firstSnap={c:true,s:true};
+let fbUser=null,fbDB=null,pushTimer=null,lastPush={cust:{},sales:{},logs:{},meta:''},firstSnap={c:true,s:true},metaReady=false;
 function fbCfg(){try{const c=JSON.parse(localStorage.getItem(FBKEY));if(c)return c;}catch(e){}return FB_EMBED;}
 function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
 async function initCloud(){
@@ -1715,28 +1719,31 @@ function metaDoc(){return fbDB.collection('shops').doc(fbUser.uid).collection('m
 // (prevMap = what we last knew was on the cloud). Preserves local deletes/edits/adds.
 function mergeCloud(localArr,docs,prevMap){
   const cloud=docs.map(d=>d.data());
+  const tomb=new Set(state.deletedIds||[]);
   const cloudMap={},localMap={};
   cloud.forEach(x=>cloudMap[x.id]=JSON.stringify(x));
   (localArr||[]).forEach(x=>localMap[x.id]=JSON.stringify(x));
   const merged=[],handled=new Set();
   cloud.forEach(x=>{
-    const id=x.id,l=localMap[id],wasPushed=prevMap[id]!==undefined;
+    const id=x.id;if(tomb.has(id)){handled.add(id);return;} // tombstoned -> never keep
+    const l=localMap[id],wasPushed=prevMap[id]!==undefined;
     if(l===undefined){ if(wasPushed)return; merged.push(x); handled.add(id); return; } // locally deleted (pending) -> keep deleted
     if(l!==prevMap[id]&&l!==cloudMap[id])merged.push(JSON.parse(l)); // local edit not yet pushed -> keep local
     else merged.push(x);
     handled.add(id);
   });
-  (localArr||[]).forEach(x=>{ if(!handled.has(x.id)&&prevMap[x.id]===undefined)merged.push(x); }); // local add not yet pushed
+  (localArr||[]).forEach(x=>{ if(!handled.has(x.id)&&!tomb.has(x.id)&&prevMap[x.id]===undefined)merged.push(x); }); // local add not yet pushed
   return merged;
 }
 function startSync(){
-  firstSnap={c:true,s:true};lastPush={cust:{},sales:{},logs:{},meta:''};
+  firstSnap={c:true,s:true};lastPush={cust:{},sales:{},logs:{},meta:''};metaReady=false;
   col('customers').onSnapshot(qs=>{
     const prev=lastPush.cust||{};
     if(firstSnap.c){firstSnap.c=false;
-      const cloud=qs.docs.map(d=>d.data());
+      const tomb=new Set(state.deletedIds||[]);
+      const cloud=qs.docs.map(d=>d.data()).filter(c=>!tomb.has(c.id));
       const ids=new Set(cloud.map(c=>c.id));
-      state.customers=[...cloud,...state.customers.filter(c=>!ids.has(c.id))];
+      state.customers=[...cloud,...state.customers.filter(c=>!ids.has(c.id)&&!tomb.has(c.id))];
     }else{
       state.customers=mergeCloud(state.customers,qs.docs,prev);
     }
@@ -1747,9 +1754,10 @@ function startSync(){
   col('sales').onSnapshot(qs=>{
     const prev=lastPush.sales||{};
     if(firstSnap.s){firstSnap.s=false;
-      const cloud=qs.docs.map(d=>d.data());
+      const tomb=new Set(state.deletedIds||[]);
+      const cloud=qs.docs.map(d=>d.data()).filter(s=>!tomb.has(s.id));
       const ids=new Set(cloud.map(s=>s.id));
-      state.sales=[...cloud,...state.sales.filter(s=>!ids.has(s.id))];
+      state.sales=[...cloud,...state.sales.filter(s=>!ids.has(s.id)&&!tomb.has(s.id))];
     }else{
       state.sales=mergeCloud(state.sales,qs.docs,prev);
     }
@@ -1767,19 +1775,32 @@ function startSync(){
     if(curPage==='log')renderLog();
   },e=>console.error(e));
   metaDoc().onSnapshot(d=>{
+    metaReady=true;
     if(!d.exists)return;
     const m=d.data();
     state.brands=m.brands||state.brands;state.shop=m.shop||state.shop;
     if(Array.isArray(m.branches)&&m.branches.length)state.branches=m.branches;
     if(m.catalog&&typeof m.catalog==='object'&&!Array.isArray(m.catalog)){state.catalog=m.catalog;normalizeCatalog(state.catalog);}
     state.seq=Math.max(state.seq,m.seq||0);state.billSeq=Math.max(state.billSeq,m.billSeq||0);
-    lastPush.meta=JSON.stringify({brands:state.brands,branches:state.branches,catalog:state.catalog,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
+    // merge tombstones from cloud, then purge any resurrected records
+    if(Array.isArray(m.deleted)&&m.deleted.length){
+      const before=state.deletedIds.length;
+      const set=new Set(state.deletedIds);m.deleted.forEach(id=>set.add(id));
+      state.deletedIds=[...set];
+      const tomb=new Set(state.deletedIds);
+      const sBefore=state.sales.length,cBefore=state.customers.length;
+      state.sales=state.sales.filter(s=>!tomb.has(s.id));
+      state.customers=state.customers.filter(c=>!tomb.has(c.id));
+      if(state.deletedIds.length!==before||state.sales.length!==sBefore||state.customers.length!==cBefore){schedulePush();refreshUI();}
+    }
+    lastPush.meta=JSON.stringify({brands:state.brands,branches:state.branches,catalog:state.catalog,deleted:state.deletedIds,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
     localStorage.setItem(KEY,JSON.stringify(state));fillBrands();fillBranches();fillModels();if(curPage==='setting')renderCatalog();
   });
 }
 function schedulePush(){if(!fbUser||!fbDB)return;clearTimeout(pushTimer);pushTimer=setTimeout(cloudPush,800);}
 async function cloudPush(){
   if(!fbUser||!fbDB)return;
+  if(!metaReady){schedulePush();return;} // wait until tombstones loaded from cloud before pushing (prevents re-uploading deleted items)
   try{
     const ops=[];
     const cur={cust:{},sales:{}};
@@ -1791,7 +1812,7 @@ async function cloudPush(){
     for(const id in lastPush.sales)if(!cur.sales[id])ops.push(['del',col('sales').doc(id)]);
     const curLogs={};
     (state.logs||[]).forEach(l=>{curLogs[l.id]=1;if(!lastPush.logs[l.id])ops.push(['set',col('logs').doc(l.id),l]);});
-    const meta=JSON.stringify({brands:state.brands,branches:state.branches,catalog:state.catalog,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
+    const meta=JSON.stringify({brands:state.brands,branches:state.branches,catalog:state.catalog,deleted:state.deletedIds,shop:state.shop,seq:state.seq,billSeq:state.billSeq});
     if(meta!==lastPush.meta)ops.push(['set',metaDoc(),JSON.parse(meta)]);
     for(let i=0;i<ops.length;i+=400){
       const b=fbDB.batch();
