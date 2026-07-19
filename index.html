@@ -115,33 +115,39 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
 .set-section.active,.rep-section.active{display:block}
 @media(max-width:760px){.set-layout,.rep-layout{grid-template-columns:1fr}.set-nav,.rep-nav{position:static;flex-direction:row;flex-wrap:wrap;margin-bottom:6px}.set-nav button,.rep-nav button{font-size:14px;padding:8px 14px;border:1px solid var(--line);border-radius:20px}}
 @media print{header nav,.no-print{display:none}}
-/* ===== RECEIPT ===== */
-.receipt-sheet{background:#fff;color:#000;width:100%;max-width:420px;margin:0 auto;padding:18px 20px;font-family:'Prompt',sans-serif;font-size:13px;border:1px dashed var(--line)}
-.r-title{text-align:center;font-size:20px;font-weight:600;letter-spacing:2px}
-.r-shop{text-align:center;font-size:17px;font-weight:600;margin-top:2px}
-.r-line{text-align:center;font-size:11.5px}
-.r-contact{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px;margin-top:6px;border-bottom:1.5px solid #000;padding-bottom:6px}
-.r-contact b{font-size:13px;white-space:nowrap}
-.r-meta{display:flex;justify-content:space-between;font-size:11.5px;margin-top:6px;color:#333}
-.r-cust{margin-top:6px;font-size:13px;display:flex;justify-content:space-between;gap:10px}
-.r-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
-.r-table th{border-top:1.5px solid #000;border-bottom:1.5px solid #000;padding:5px 4px;font-weight:600;text-align:center}
-.r-table td{padding:5px 4px;border-bottom:none}
+/* ===== RECEIPT (A5 landscape, single column) ===== */
+.receipt-sheet{background:#fff;color:#1a1a1a;width:100%;max-width:760px;margin:0 auto;padding:18px 26px;font-family:'Prompt',sans-serif;font-size:13px;border:1px dashed var(--line)}
+.r-head{text-align:center;border-bottom:2px solid #1a1a1a;padding-bottom:9px}
+.r-title{font-size:23px;font-weight:700;letter-spacing:4px}
+.r-title span{display:block;font-size:11px;font-weight:400;letter-spacing:2px;color:#777;margin-top:1px}
+.r-shop{font-size:18px;font-weight:600;margin-top:3px}
+.r-line{font-size:11.5px;color:#444}
+.r-contact{display:flex;justify-content:center;gap:14px;align-items:baseline;font-size:11.5px;margin-top:5px;color:#444}
+.r-contact b{font-size:12.5px;white-space:nowrap;color:#1a1a1a}
+.r-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 18px;font-size:12px;margin-top:9px;color:#333}
+.r-cust{margin-top:5px;font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 14px}
+.r-rx{font-size:11px;margin-top:6px;color:#333;background:#f5f6f7;padding:5px 9px;border-radius:5px}
+.r-table{width:100%;border-collapse:collapse;margin-top:11px;font-size:12.5px}
+.r-table th{border-top:1.5px solid #1a1a1a;border-bottom:1.5px solid #1a1a1a;padding:6px 6px;font-weight:600;text-align:center;font-size:11.5px;color:#555;letter-spacing:.3px}
+.r-table td{padding:5px 6px;border-bottom:1px solid #eee;vertical-align:top}
 .r-table tr:hover td{background:none}
-.r-table .qtyrow td{border-top:1.5px solid #000;font-weight:600}
-.r-sums{margin-top:12px}
-.r-sums div{display:flex;justify-content:flex-end;gap:26px;font-size:14px;padding:2px 0}
-.r-sums b{min-width:90px;text-align:right}
-.r-sums .grand{font-weight:600;font-size:15px}
-.r-sign{margin-top:34px;text-align:center;font-size:14px}
+.r-table .qtyrow td{border-top:1.5px solid #1a1a1a;border-bottom:none;font-weight:600}
+.r-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-top:14px}
+.r-sign{font-size:13px;line-height:2.4}
+.r-sign span{font-size:12px;color:#555;line-height:1.6}
+.r-sums{width:280px;border:1.5px solid #1a1a1a;border-radius:6px;padding:8px 12px}
+.r-sums div{display:flex;justify-content:space-between;gap:14px;font-size:13.5px;padding:2.5px 0}
+.r-sums b{text-align:right;white-space:nowrap}
+.r-sums .grand{font-weight:700;font-size:15px;border-top:1px solid #ccc;margin-top:2px;padding-top:5px}
+.r-sums .remain b{color:#a32d2d}
 #print-area{display:none}
 @media print{
   body.printing>*{display:none!important}
   body.printing>#print-area{display:block!important;margin:0;padding:0}
-  #print-area .receipt-sheet{width:100%;max-width:132mm;margin:0 auto;padding:0;border:none;box-shadow:none;color:#000;font-size:12.5px;box-sizing:border-box}
+  #print-area .receipt-sheet{width:100%;max-width:none;margin:0;padding:0;border:none;box-shadow:none;color:#000;font-size:12px;box-sizing:border-box}
   #print-area .r-contact{flex-wrap:wrap;gap:2px 8px}
-  #print-area .r-sums div{gap:14px}
-  #print-area .r-sign{margin-top:18px}
+  #print-area .r-sums div{gap:12px}
+  #print-area .r-sign{margin-top:14px}
   #print-area *{overflow-wrap:anywhere}
 }
 </style>
@@ -1273,37 +1279,37 @@ function openBill(id){
   if(!s.billNo){state.billSeq++;s.billNo='No.'+String(state.billSeq).padStart(4,'0');save();}
   const c=s.customerId?state.customers.find(x=>x.id===s.customerId):null;
   const sh=state.shop;
-  const rows=s.items.map(i=>`<tr><td>${esc([i.brand,i.name].filter(Boolean).join(' '))}${i.disc?`<div style="font-size:10px;color:#666">ลด ${esc(lineDiscLabel(i))}</div>`:''}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right">${fmt(i.price)}</td><td style="text-align:right">${fmt(lineNet(i))} บาท</td></tr>`).join('');
-  const pad=Math.max(0,4-s.items.length);
-  const padRows='<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>'.repeat(pad);
+  const rows=s.items.map((i,x)=>`<tr><td style="text-align:center;color:#888">${x+1}</td><td style="text-align:left">${esc([i.brand,i.name].filter(Boolean).join(' '))}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right">${fmt(i.price)}</td><td style="text-align:right;color:#a32d2d">${i.disc?esc(lineDiscLabel(i)):'-'}</td><td style="text-align:right;font-weight:600">${fmt(lineNet(i))}</td></tr>`).join('');
   const totalQty=s.items.reduce((a,i)=>a+i.qty,0);
   const dep=s.deposit||0;
   document.getElementById('bill-area').innerHTML=`
   <div class="receipt-sheet" id="receipt">
-    <div class="r-title">RECEIPT</div>
-    <div class="r-shop">ศูนย์แว่นตาคุณหมอ</div>
-    <div class="r-line">${esc(sh.addr1)}</div>
-    <div class="r-line">${esc(sh.addr2)}</div>
-    <div class="r-contact"><span>Facebook : ${esc(sh.fb)} &nbsp;&nbsp; Line : ${esc(sh.line)}</span><b>โทร.${esc(sh.tel)}</b></div>
-    <div class="r-meta"><span>เลขที่ ${esc(s.billNo)}</span><span>${esc(s.branch||'สาขาหลัก')}</span><span>วันที่ ${thDate(s.date)}</span></div>
-    <div class="r-cust"><span><b>คุณ:</b> ${esc(c?c.name:'')}</span><span><b>โทร.</b> ${esc(c?c.phone||'':'')}</span></div>
-    <div class="r-cust"><span><b>ที่อยู่ :</b> ${esc(c?c.addr||'':'')}</span></div>
-    ${s.rx?`<div style="font-size:11px;margin-top:4px;color:#333">ค่าสายตา — ${esc(rxStr(s.rx))}</div>`:''}
-    <table class="r-table">
-      <tr><th style="text-align:left">รายการ</th><th>จำนวน</th><th>ราคา</th><th>รวม</th></tr>
-      ${rows}${padRows}
-      <tr class="qtyrow"><td></td><td style="text-align:center">${totalQty}</td><td></td><td></td></tr>
-    </table>
-    <div class="r-sums">
-      ${s.discount?`<div><span>ยอดรวม</span><b>${fmt(s.subtotal??s.total)} บาท</b></div>
-      <div><span>ส่วนลด</span><b>- ${fmt(s.discount)} บาท</b></div>
-      <div class="grand"><span>ยอดสุทธิ</span><b>${fmt(s.total)} บาท</b></div>`
-      :`<div class="grand"><span>ยอดรวม</span><b>${fmt(s.total)} บาท</b></div>`}
-      <div><span>มัดจำ</span><b>${fmt(dep)} บาท</b></div>
-      <div class="grand"><span>คงเหลือ</span><b>${fmt(Math.max(0,s.total-dep))} บาท</b></div>
+    <div class="r-head">
+      <div class="r-title">RECEIPT <span>ใบเสร็จรับเงิน</span></div>
+      <div class="r-shop">ศูนย์แว่นตาคุณหมอ</div>
+      <div class="r-line">${esc(sh.addr1)}</div>
+      ${sh.addr2?`<div class="r-line">${esc(sh.addr2)}</div>`:''}
+      <div class="r-contact"><span>Facebook : ${esc(sh.fb)} &nbsp;·&nbsp; Line : ${esc(sh.line)}</span><b>โทร. ${esc(sh.tel)}</b></div>
     </div>
-    ${s.appointDate?`<div class="r-cust" style="margin-top:8px"><span><b>นัดรับวันที่:</b> ${thDate(s.appointDate)}</span></div>`:''}
-    <div class="r-sign">ผู้รับเงิน______________________________</div>
+    <div class="r-meta"><span><b>เลขที่</b> ${esc(s.billNo)}</span><span><b>สาขา</b> ${esc(s.branch||'สาขาหลัก')}</span><span><b>วันที่</b> ${thDate(s.date)}</span></div>
+    <div class="r-cust"><span><b>ลูกค้า :</b> ${esc(c?c.name:'ลูกค้าทั่วไป')}</span><span><b>โทร.</b> ${esc(c?c.phone||'-':'-')}</span></div>
+    ${c&&c.addr?`<div class="r-cust"><span><b>ที่อยู่ :</b> ${esc(c.addr)}</span></div>`:''}
+    ${s.rx?`<div class="r-rx">ค่าสายตา — ${esc(rxStr(s.rx))}</div>`:''}
+    <table class="r-table">
+      <tr><th style="width:24px">#</th><th style="text-align:left">รายการ</th><th style="width:52px">จำนวน</th><th style="width:78px;text-align:right">ราคา/ชิ้น</th><th style="width:80px;text-align:right">ส่วนลด</th><th style="width:90px;text-align:right">รวม (บาท)</th></tr>
+      ${rows}
+      <tr class="qtyrow"><td></td><td style="text-align:left">รวมจำนวน</td><td style="text-align:center">${totalQty}</td><td colspan="3"></td></tr>
+    </table>
+    <div class="r-foot">
+      <div class="r-sign">ผู้รับเงิน______________________<br><span>${s.appointDate?'นัดรับวันที่ '+thDate(s.appointDate):''}</span></div>
+      <div class="r-sums">
+        ${s.discount?`<div><span>ยอดรวม</span><b>${fmt(s.subtotal??s.total)}</b></div>
+        <div><span>ส่วนลดท้ายบิล</span><b>- ${fmt(s.discount)}</b></div>`:''}
+        <div class="grand"><span>ยอดสุทธิ</span><b>${fmt(s.total)}</b></div>
+        <div><span>มัดจำ / ชำระแล้ว</span><b>${fmt(dep)}</b></div>
+        <div class="grand remain"><span>คงเหลือ</span><b>${fmt(Math.max(0,s.total-dep))}</b></div>
+      </div>
+    </div>
   </div>`;
   document.getElementById('bill-modal').classList.add('open');
 }
@@ -1313,7 +1319,7 @@ function printBill(){
   const holder=document.createElement('div');holder.id='print-area';holder.innerHTML=sheet.outerHTML;
   document.body.appendChild(holder);
   const st=document.createElement('style');
-  st.id='a5-page';st.textContent='@page{size:148mm 210mm;margin:8mm}';
+  st.id='a5-page';st.textContent='@page{size:210mm 148mm;margin:7mm}';
   document.head.appendChild(st);
   document.body.classList.add('printing');
   let cleaned=false;
