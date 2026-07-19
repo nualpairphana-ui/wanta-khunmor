@@ -116,7 +116,7 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
 @media(max-width:760px){.set-layout,.rep-layout{grid-template-columns:1fr}.set-nav,.rep-nav{position:static;flex-direction:row;flex-wrap:wrap;margin-bottom:6px}.set-nav button,.rep-nav button{font-size:14px;padding:8px 14px;border:1px solid var(--line);border-radius:20px}}
 @media print{header nav,.no-print{display:none}}
 /* ===== RECEIPT (A5 landscape, single column, compact to fit 1 page) ===== */
-.receipt-sheet{background:#fff;color:#1a1a1a;width:100%;max-width:760px;margin:0 auto;padding:12px 22px;font-family:'Prompt',sans-serif;font-size:12px;line-height:1.35;border:1px dashed var(--line)}
+.receipt-sheet{background:#fff;color:#1a1a1a;width:100%;max-width:520px;margin:0 auto;padding:14px 20px;font-family:'Prompt',sans-serif;font-size:12px;line-height:1.35;border:1px dashed var(--line)}
 .r-head{text-align:center;border-bottom:1.5px solid #1a1a1a;padding-bottom:5px}
 .r-title{font-size:19px;font-weight:700;letter-spacing:3px}
 .r-title span{display:inline;font-size:11px;font-weight:400;letter-spacing:1px;color:#777}
@@ -132,10 +132,10 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
 .r-table td{padding:3px 6px;border-bottom:1px solid #eee;vertical-align:top}
 .r-table tr:hover td{background:none}
 .r-table .qtyrow td{border-top:1.5px solid #1a1a1a;border-bottom:none;font-weight:600}
-.r-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-top:10px}
-.r-sign{font-size:12px;line-height:2}
-.r-sign span{font-size:11px;color:#555;line-height:1.4}
-.r-sums{width:270px;border:1.5px solid #1a1a1a;border-radius:6px;padding:6px 11px}
+.r-foot{margin-top:10px}
+.r-sign{font-size:12px;line-height:2;margin-top:16px}
+.r-sign span{display:block;font-size:11px;color:#555;line-height:1.4;margin-top:2px}
+.r-sums{width:250px;margin-left:auto;border:1.5px solid #1a1a1a;border-radius:6px;padding:6px 11px}
 .r-sums div{display:flex;justify-content:space-between;gap:14px;font-size:13px;padding:1.5px 0}
 .r-sums b{text-align:right;white-space:nowrap}
 .r-sums .grand{font-weight:700;font-size:14.5px;border-top:1px solid #ccc;margin-top:1px;padding-top:4px}
@@ -1301,7 +1301,6 @@ function openBill(id){
       <tr class="qtyrow"><td></td><td style="text-align:left">รวมจำนวน</td><td style="text-align:center">${totalQty}</td><td colspan="3"></td></tr>
     </table>
     <div class="r-foot">
-      <div class="r-sign">ผู้รับเงิน______________________<br><span>${s.appointDate?'นัดรับวันที่ '+thDate(s.appointDate):''}</span></div>
       <div class="r-sums">
         ${s.discount?`<div><span>ยอดรวม</span><b>${fmt(s.subtotal??s.total)}</b></div>
         <div><span>ส่วนลดท้ายบิล</span><b>- ${fmt(s.discount)}</b></div>`:''}
@@ -1309,6 +1308,7 @@ function openBill(id){
         <div><span>มัดจำ / ชำระแล้ว</span><b>${fmt(dep)}</b></div>
         <div class="grand remain"><span>คงเหลือ</span><b>${fmt(Math.max(0,s.total-dep))}</b></div>
       </div>
+      <div class="r-sign">ผู้รับเงิน______________________<br><span>${s.appointDate?'นัดรับวันที่ '+thDate(s.appointDate):''}</span></div>
     </div>
   </div>`;
   document.getElementById('bill-modal').classList.add('open');
@@ -1319,7 +1319,7 @@ function printBill(){
   const holder=document.createElement('div');holder.id='print-area';holder.innerHTML=sheet.outerHTML;
   document.body.appendChild(holder);
   const st=document.createElement('style');
-  st.id='a5-page';st.textContent='@page{size:210mm 148mm;margin:5mm}';
+  st.id='a5-page';st.textContent='@page{size:148mm 210mm;margin:6mm}';
   document.head.appendChild(st);
   document.body.classList.add('printing');
   let cleaned=false;
