@@ -137,9 +137,9 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
 #print-area{display:none}
 @media print{
   body.printing>*{display:none!important}
-  body.printing>#print-area{display:block!important}
-  #print-area{margin:0;padding:0}
-  #print-area .receipt-sheet{width:100%;max-width:126mm;margin:0 auto;padding:0;border:none;box-shadow:none;color:#000;font-size:12.5px;box-sizing:border-box}
+  /* Paper is A5 fed LANDSCAPE (210x148). Rotate the portrait receipt 90deg so it prints upright when the sheet is turned. */
+  body.printing>#print-area{display:block!important;width:210mm;height:148mm;position:relative;overflow:hidden;margin:0;padding:0}
+  #print-area .receipt-sheet{position:absolute;top:50%;left:50%;width:148mm;height:210mm;transform:translate(-50%,-50%) rotate(90deg);transform-origin:center center;box-sizing:border-box;padding:7mm 8mm;margin:0;max-width:none;border:none;box-shadow:none;color:#000;font-size:12.5px}
   #print-area .r-contact{flex-wrap:wrap;gap:2px 8px}
   #print-area .r-sums div{gap:14px}
   #print-area .r-sign{margin-top:18px}
@@ -1314,7 +1314,7 @@ function printBill(){
   const holder=document.createElement('div');holder.id='print-area';holder.innerHTML=sheet.outerHTML;
   document.body.appendChild(holder);
   const st=document.createElement('style');
-  st.id='a5-page';st.textContent='@page{size:148mm 210mm;margin:8mm}';
+  st.id='a5-page';st.textContent='@page{size:210mm 148mm;margin:0}';
   document.head.appendChild(st);
   document.body.classList.add('printing');
   let cleaned=false;
